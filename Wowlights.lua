@@ -9,12 +9,13 @@ WLTexHigh = 3
 WLTex = {}
 
 
+
 -------------------------- STARTUP ------------------------
 
 print("Wowlights Startup")
-WoWLights = CreateFrame("Frame","WoW Lights",UIParent)
-WoWLights:SetSize(WowPtGridSize * WLTexWide, WowPtGridSize * WLTexHigh)
-WoWLights:SetPoint("BOTTOMLEFT", 0, -2*WowPtGridSize)
+WoWLightsFrame = CreateFrame("Frame","WoW Lights",UIParent)
+WoWLightsFrame:SetSize(WowPtGridSize * WLTexWide, WowPtGridSize * WLTexHigh)
+WoWLightsFrame:SetPoint("BOTTOMLEFT", 0, -2*WowPtGridSize)
 
 for r = 1,WLTexHigh do
 	for c = 1, WLTexWide do
@@ -29,39 +30,34 @@ for r = 1,WLTexHigh do
 			bb = 0
 		end
 
-		tex = WoWLights:CreateTexture()
+		tex = WoWLightsFrame:CreateTexture("","ARTWORK")
 		tex:SetSize(WowPtGridSize,WowPtGridSize)
-		tex:SetPoint("TOPLEFT", WoWLights, (c-1)*WowPtGridSize,(r-1)*WowPtGridSize)
+		tex:SetPoint("TOPLEFT", WoWLightsFrame, (c-1)*WowPtGridSize,(r-1)*WowPtGridSize)
 		tex:SetColorTexture(rr, gg, bb,1)	
 		WLTex[r*WLTexWide + c] = tex
 	end
 end
 
+-- use this for an entire-keyboard effect
+WLTexOverall = WoWLightsFrame:CreateTexture("","OVERLAY")
+WLTexOverall:SetAllPoints()
+WLTexOverall:SetColorTexture(1,1,1,0) -- transparent for now	
 
---WoWLights.tex11 = WoWLights:CreateTexture("wl11")
---WoWLights.tex11:SetSize(WowPtGridSize,WowPtGridSize)
---WoWLights.tex11:SetPoint("TOPLEFT", WoWLights, 0,0)
---WoWLights.tex11:SetColorTexture(1,0,0,1)
---
---WoWLights.tex12 = WoWLights:CreateTexture("wl12")
---WoWLights.tex12:SetSize(WowPtGridSize,WowPtGridSize)
---WoWLights.tex12:SetPoint("TOPLEFT", WoWLights, WowPtGridSize,0)
---WoWLights.tex12:SetColorTexture(0,1,0,1)
---
---WoWLights.tex13 = WoWLights:CreateTexture("wl13")
---WoWLights.tex13:SetAllPoints(WoWLights)
---WoWLights.tex13:SetPoint("TOPLEFT", WoWLights, WowPtGridSize*2,0)
---WoWLights.tex13:SetColorTexture(0,0,1,1)
+-- Could add full width/height additional layers?
+-- Can do animation too
 
+-- I can make gradient textures!  But it's only sampled by ~8 keys
+ 
 
 -------------------------- PLUG INTO EVENTS OF INTEREST ------------------------
 
-function WoWLights:OnLoad()
+function WoWLights_OnLoad(self)
 	
 	print("Wowlights OnLoad")
 	
-	local f = WoWLightsMainFrame						-- defined by the XML
+	local f = WoWLightsFrame
 	f:RegisterEvent("PLAYER_ENTERING_WORLD")	-- environment ready
+	f:RegisterEvent("PLAYER_STARTED_MOVING")
 end
 
 -------------------------- EVENT ROUTINES CALLED BY WOW ------------------------
@@ -69,18 +65,14 @@ end
 ---##################################
 ---#########  ON_EVENT   ############
 ---##################################
-function WoWLights:OnEvent(event, ...)
+function WoWLights_OnEvent(self,event, ...)
 	print("WoW lights Event: "..event)
 	local arg1, arg2 = ...;
     if event == "PLAYER_ENTERING_WORLD" then        -- set stuff up
     	print("PLAYER_ENTERING_WORLD")
-        WoWLights:Show()
-        
---        WoWLights:HookScript("OnUpdate", function(self, elapsed)
---        	self:OnUpdate(elapsed)
---        end)
-        
-        --self:setupGuardPixels()
+        WoWLightsFrame:Show()
+    elseif event == "PLAYER_STARTED_MOVING" then
+    	print("Moving")
     else
     	print("WoWLights: Registered for but didn't handle "..event)  
     end    
@@ -90,7 +82,12 @@ end
 ---##################################
 ---#########  ON_UPDATE   ###########
 ---##################################
-function WoWLights:OnUpdate(elapsed)
+function WoWLights_OnUpdate(self,elapsed)
 
 end
+
+WoWLightsFrame:SetScript("OnEvent", WoWLights_OnEvent)
+WoWLightsFrame:SetScript("OnUpdate", WoWLights_OnUpdate)
+WoWLights_OnLoad(WoWLightsFrame)
+
 
