@@ -1,5 +1,10 @@
 ﻿--   ## WoW Lights - ©2022 J∆•Softcode (www.jdsoftcode.net) ##
 
+-------------------------- DEFINE USER SLASH COMMANDS ------------------------
+
+SLASH_WOWLT1 = "/wlights"
+
+
 -------------------------- ADD-ON GLOBALS ------------------------
 
 WoWLights = {}							--  namespace for all addon functions
@@ -26,6 +31,11 @@ local copperColorInt = 12023884
 local deathColorInt = 6579300
 
 local combatColorInt = redColorInt
+
+OribosZoneNames = "Oribos Орибос"	--  All western + Russian
+InBetweenZoneNames = "The In-Between Der Zwischenraum La Zona Intermedia Entre-Deux O Intermédio Промежуток" 
+										--  English, German, Spanish, French, Portugues, Russian
+
 
 local playerBgGrid = { -- this needs to be loadable and editable; change for character/talent spec
 	redColorInt,  -- array is indexed 1-18
@@ -65,6 +75,45 @@ WoWLightsFrame:SetScript("OnUpdate", function(self, elapsed)
 end)
 
 WoWLightsFrame:RegisterEvent("ADDON_LOADED")
+
+WoWLightsOptionsFrame = CreateFrame("Frame","WoW Lights Options",UIParent,"PortraitFrameTemplate")
+WoWLightsOptionsFrame:Hide()
+WoWLightsOptionsFrame:SetFrameStrata("HIGH")
+WoWLightsOptionsFrame:SetPoint("CENTER")
+WoWLightsOptionsFrame:SetSize(500,300)
+WoWLightsOptionsFrame:SetScript("OnShow", function(self, ff) PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN) end)
+WoWLightsOptionsFrame:SetScript("OnHide", function(self, ff) PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE) end)
+
+local t = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+t:SetText("WoW Lights Settings")
+t:SetSize(200,36)
+t:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",160,7)
+
+local t2 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontWhiteSmall")
+t2:SetText("Click to change one color")
+t2:SetSize(200,36)
+t2:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",10,-50)
+
+local b1 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
+b1:SetText("Memorize")
+b1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",100,-100)
+b1:SetSize(100,24)
+b1:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT) end)
+
+--local b2 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelSquareButton")
+local b2 = CreateFrame("Button",nil,WoWLightsOptionsFrame)
+b2:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",300,-100)
+b2:SetSize(50,50)
+b2.tex = b2:CreateTexture(nil, "OVERLAY")
+b2.tex:SetColorTexture(1,1,0,1)
+b2:SetNormalTexture(b2.tex)
+b2:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_IN) end)
+
+
+
+-------------------------- THE SLASH COMMANDS EXECUTE CODE HERE ------------------------
+SlashCmdList["WOWLT"] = function(msg, theEditFrame) WoWLightsOptionsFrame:Show() end
+
 
 
 --------------------------- GRID UTILITIES -----------------------------
@@ -501,6 +550,20 @@ local function cheatDeath(ff)
 	applyPlayerDefaultBackColors(ff.baseTex)
 end
 
+local function updateInBetweenFlight(ff)
+	local zone = GetZoneText()
+	zone = string.gsub(zone,"%-","%%%-")  -- string.find() uses patterns so must escape '-'
+	if string.find(OribosZoneNames, zone) ~= nil or string.find(InBetweenZoneNames, zone) ~= nil then
+		if UnitOnTaxi("player") then
+			ff.fireworks[2].wipeOut:Play()
+			ff.fireworks[3].wipeOut:Play()
+		end
+		-- keep calling myself every 1.5sec while in the special zones, and play animation if on taxi
+		C_Timer.After(1.5, function() updateInBetweenFlight(ff) end)
+	end
+end
+
+
 ----------------------- MAIN WOW LIGHTS ACTION CODE ----------------------
 
 ---##################################
@@ -545,6 +608,16 @@ local function OnLoad(ff)
 	ff:RegisterEvent("DUEL_REQUESTED")
 	ff:RegisterEvent("ROLE_POLL_BEGIN")
 	ff:RegisterEvent("CHAT_MSG_RAID_WARNING")
+	ff:RegisterEvent("HEARTHSTONE_BOUND")
+	ff:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+	
+	-- logic to filter on not every talent change?
+	ff:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
+	
+	-- TODO
+	f:RegisterEvent("PLAYER_CONTROL_GAINED")
+	f:RegisterEvent("PLAYER_CONTROL_LOST") -- darken the lights to indicate out of control
+
 	
 
 	
@@ -590,9 +663,11 @@ function WoWLights:OnEvent(ff,event, ...)
     	ff.alloverFrame.fadeInOut:Stop()
     	
     elseif event == "TRANSMOGRIFY_SUCCESS" or event == "NEW_TOY_ADDED" then
+    	ff:UnregisterEvent("TRANSMOGRIFY_SUCCESS") -- only take first call, not every piece of gear!
 		for i,wiper in ipairs(ff.rainbowAnim) do
 			wiper.wipeDown:Play()
 		end
+		C_Timer.After(1.5, function() ff:RegisterEvent("TRANSMOGRIFY_SUCCESS") end)
 
     elseif event == "ACTIVE_TALENT_GROUP_CHANGED" then
 		for i,wiper in ipairs(ff.talentAnim) do
@@ -620,22 +695,28 @@ function WoWLights:OnEvent(ff,event, ...)
     elseif event == "READY_CHECK" then
 		setBgToColorWithWhiteBox(ff.baseTex, greenColorInt)
 		C_Timer.After(1.5, function() applyPlayerDefaultBackColors(ff.baseTex) end)
-    elseif event == "DUEL_REQUESTED" then           -- added in 1.6
+    elseif event == "DUEL_REQUESTED" then
 		setBgToColorWithWhiteBox(ff.baseTex, redColorInt)
 		C_Timer.After(1.5, function() applyPlayerDefaultBackColors(ff.baseTex) end)
-    elseif event == "ROLE_POLL_BEGIN" then          -- added in 2.0
+    elseif event == "ROLE_POLL_BEGIN" then
 		setBgToColorWithWhiteBox(ff.baseTex, blueColorInt)
 		C_Timer.After(1.5, function() applyPlayerDefaultBackColors(ff.baseTex) end)
-    elseif event == "CHAT_MSG_RAID_WARNING" then  -- added in 2.0   There is too much going on during a fight for a /rw on keyboard lights to work well
+    elseif event == "CHAT_MSG_RAID_WARNING" then
 		setBgToColorWithWhiteBox(ff.baseTex, orangeColorInt)
 		C_Timer.After(1.5, function() applyPlayerDefaultBackColors(ff.baseTex) end)
 
+    elseif event == "HEARTHSTONE_BOUND" then
+		applyCheckerboard(ff.baseTex, cyanColorInt, blackColorInt)
+		C_Timer.After(1.0, function() applyCheckerboard(ff.baseTex, blackColorInt, cyanColorInt) end)
+		C_Timer.After(2.0, function() applyPlayerDefaultBackColors(ff.baseTex) end)
     	
-    	
-    	
-    	
-    	
-    	
+	elseif event == "ZONE_CHANGED_NEW_AREA" then
+		updateInBetweenFlight(ff)
+
+
+
+
+
     else
     	print("WoWLights: Registered for but didn't handle "..event)  
     end    
