@@ -4,7 +4,6 @@
 
 SLASH_WOWLT1 = "/wlights"
 
-
 -------------------------- ADD-ON GLOBALS ------------------------
 
 WoWLights = {}							--  namespace for all addon functions
@@ -36,7 +35,6 @@ OribosZoneNames = "Oribos Орибос"	--  All western + Russian
 InBetweenZoneNames = "The In-Between Der Zwischenraum La Zona Intermedia Entre-Deux O Intermédio Промежуток" 
 										--  English, German, Spanish, French, Portugues, Russian
 
-
 local playerBgGrid = { -- this needs to be loadable and editable; change for character/talent spec
 	redColorInt,  -- array is indexed 1-18
 	blackColorInt,
@@ -60,7 +58,7 @@ local playerBgGrid = { -- this needs to be loadable and editable; change for cha
 
 
 
------------------------------- STARTUP ---------------------------
+------------------------------ STARTUP MAIN FRAME  ---------------------------
 
 WoWLightsFrame = CreateFrame("Frame","WoW Lights",UIParent)
 WoWLightsFrame:SetFrameStrata("LOW")
@@ -70,53 +68,158 @@ WoWLightsFrame:SetScript("OnEvent", function(self, event, ...)
 	WoWLights:OnEvent(self,event, ...) 
 end)
 
-WoWLightsFrame:SetScript("OnUpdate", function(self, elapsed) 
-	WoWLights:OnUpdate(elapsed) 
-end)
+--WoWLightsFrame:SetScript("OnUpdate", function(self, elapsed) 
+--	WoWLights:OnUpdate(elapsed) 
+--end)
 
 WoWLightsFrame:RegisterEvent("ADDON_LOADED")
 
-WoWLightsOptionsFrame = CreateFrame("Frame","WoW Lights Options",UIParent,"PortraitFrameTemplate")
+---------------------- HANDLE SETTINGS BOX CONTROLS -------------
+
+local function pickedNewColor()
+	rr, gg, bb = ColorPickerFrame:GetColorRGB()
+	print("got r="..rr.." g="..gg.." b="..bb)
+end
+
+local function rejectedNewColor()
+	print("cancelled color pick")
+end
+
+--local function handleSelectNewColor(colorInt)
+--	rr, gg, bb = 0,1.0,0 -- how to do this with function defined below?
+--	ColorPickerFrame:SetColorRGB(rr, gg, bb)
+--	ColorPickerFrame.func = pickedNewColor
+--	ColorPickerFrame.cancelFunc = rejectedNewColor
+--	ColorPickerFrame:Hide() 
+--	ColorPickerFrame:Show() 
+--end
+
+
+------------------------- CREATE SETTINGS FRAME ----------------------------
+
+WoWLightsOptionsFrame = CreateFrame("Frame","WoWLightsOpt",UIParent,"PortraitFrameTemplate")
 WoWLightsOptionsFrame:Hide()
 WoWLightsOptionsFrame:SetFrameStrata("HIGH")
 WoWLightsOptionsFrame:SetPoint("CENTER")
 WoWLightsOptionsFrame:SetSize(500,300)
 WoWLightsOptionsFrame:SetScript("OnShow", function(self, ff) PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN) end)
 WoWLightsOptionsFrame:SetScript("OnHide", function(self, ff) PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE) end)
+WoWLightsOptPortrait:SetTexture("Interface\\MERCHANTFRAME\\UI-BuyBack-Icon")
 
 local t = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 t:SetText("WoW Lights Settings")
 t:SetSize(200,36)
 t:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",160,7)
 
+local t1 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+t1:SetText("Keyboard Basic Colors")
+t1:SetSize(200,36)
+t1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",110,-35)
+
 local t2 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontWhiteSmall")
 t2:SetText("Click to change one color")
 t2:SetSize(200,36)
-t2:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",10,-50)
+t2:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",108,-138)
+
+local t3 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+t3:SetText("Character: Waldokind")
+t3:SetSize(200,36)
+t3:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",250,-70)
+WoWLightsOptionsFrame.charString = t3
+
+local t4 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+t4:SetText("Spec: Retribution")
+t4:SetSize(200,36)
+t4:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",270,-100)
+WoWLightsOptionsFrame.specString = t4
+
+local t5 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+t5:SetText("Combat Flash Brightness")
+t5:SetSize(200,36)
+t5:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",20,-180)
+
+local t6 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+t6:SetText("Frame Size")
+t6:SetSize(200,36)
+t6:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",300,-180)
+
 
 local b1 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
-b1:SetText("Memorize")
-b1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",100,-100)
+b1:SetText("Set Row 1")
+b1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",20,-70)
 b1:SetSize(100,24)
-b1:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT) end)
+b1:SetScript("OnClick", function(self, btn,down) 
+	ColorPickerFrame:SetColorRGB(0,1.0,0)
+	ColorPickerFrame.func = pickedNewColor
+	ColorPickerFrame.cancelFunc = rejectedNewColor
+	ColorPickerFrame:Hide() 
+	ColorPickerFrame:Show() 
+	end)
 
---local b2 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelSquareButton")
-local b2 = CreateFrame("Button",nil,WoWLightsOptionsFrame)
-b2:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",300,-100)
-b2:SetSize(50,50)
-b2.tex = b2:CreateTexture(nil, "OVERLAY")
-b2.tex:SetColorTexture(1,1,0,1)
-b2:SetNormalTexture(b2.tex)
-b2:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_IN) end)
+local b2 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
+b2:SetText("Set Row 2")
+b2:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",20,-95)
+b2:SetSize(100,24)
+b2:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT) end)
+
+local b3 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
+b3:SetText("Set Row 3")
+b3:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",20,-120)
+b3:SetSize(100,24)
+b3:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT) end)
+
+local b4 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
+b4:SetText("Memorize")
+b4:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",350,-140)
+b4:SetSize(100,24)
+b4:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT) end)
+
+local b5 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
+b5:SetText("Reset Animation")
+b5:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",20,-270)
+b5:SetSize(150,24)
+b5:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT) end)
+
+local b6 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
+b6:SetText("Cancel")
+b6:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",270,-270)
+b6:SetSize(100,24)
+b6:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT) end)
+
+local b7 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
+b7:SetText("OK")
+b7:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",380,-270)
+b7:SetSize(100,24)
+b7:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT) end)
+
+
+local s1 = CreateFrame("Slider","slider",WoWLightsOptionsFrame,"OptionsSliderTemplate")
+s1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",45,-210)
+s1:SetMinMaxValues(3, 10)
+s1:SetValueStep(1)
+sliderLow:SetText("faint")
+sliderHigh:SetText("bright")
+s1:SetValue(6)
+s1:SetScript("OnValueChanged", function(self, evt, arg1) print(evt) end)
+
+
+local e1 = CreateFrame("EditBox",nil,WoWLightsOptionsFrame,"InputBoxTemplate")
+e1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",378,-212)
+e1:SetSize(50,24)
+e1:SetMultiLine(false)
+e1:SetAutoFocus(false)
+e1:SetFontObject("ChatFontNormal")
+e1:SetText("3.4")
+e1:SetScript("OnEnterPressed", function(self) print(self:GetText()) end)
 
 
 
--------------------------- THE SLASH COMMANDS EXECUTE CODE HERE ------------------------
+---------------------------- SLASH COMMAND HANDERS ---------------------------
 SlashCmdList["WOWLT"] = function(msg, theEditFrame) WoWLightsOptionsFrame:Show() end
 
 
 
---------------------------- GRID UTILITIES -----------------------------
+--------------------------- GRID MATH UTILITIES -----------------------------
 -- returns array index (0-17) of background grid location (row, col)
 local function indexOf(row, col)
 	return row*WLTexWide + col
@@ -130,7 +233,7 @@ local function randomGridPoint()
 	
 end
 
--------------------------- COLOR UTILITIES -----------------------------
+-------------------------- COLOR CONVERT UTILITIES -----------------------------
 
 -- convert red, green, and blue in floating point 0...1 scale to a colorInt
 local function color1ToInt(r, g, b)
@@ -151,7 +254,7 @@ local function intToColor(color)
 end
 
 
------------------- BUILD THE GRAPHIC COMPONENTS --------------------
+------------------ BUILDERS FOR THE GRAPHIC COMPONENTS --------------------
 
 -- create the overlay zone that appears on all the keys at once
 local function makeAlloverFrame(ff)
@@ -417,6 +520,19 @@ local function makePulser(ff, segNum)
 end
 
 
+local function makeColorButton(btnName, colorInt, parent, x, y)
+	local b = CreateFrame("Button",btnName,parent)
+	b:SetPoint("TOPLEFT",parent,"TOPLEFT",x,y)
+	b:SetSize(25,25)
+	b.tex = b:CreateTexture(nil, "OVERLAY")
+	r,g,u = intToColor(colorInt)
+	b.tex:SetColorTexture(r,g,u,1)
+	b:SetNormalTexture(b.tex)
+	b:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_IN) end)
+	return b
+end
+
+
 
 --------------------- ANIMATION MODIFICATION UTILITIES --------------------
 
@@ -490,7 +606,7 @@ end
 
 
 
------------------------- TRIGGERED ANIMATIONS -----------------------
+------------------------ DEFINE TRIGGERED ANIMATIONS -----------------------
 
 local function moveMoney(ff, moneyGain)
         if math.abs(moneyGain) < 100 then 
@@ -564,7 +680,7 @@ local function updateInBetweenFlight(ff)
 end
 
 
------------------------ MAIN WOW LIGHTS ACTION CODE ----------------------
+
 
 ---##################################
 ---##########  ON_LOAD   ############
@@ -622,6 +738,14 @@ local function OnLoad(ff)
 
 	
 	ff.wasMoney = GetMoney()	
+	
+	-- create the light color programming buttons for settings
+	for row = 0,2 do
+		for col = 0, 5 do		
+			makeColorButton(row..col, playerBgGrid[1+indexOf(row,col)], WoWLightsOptionsFrame, 130+(25*col), -70-25*row)
+		end
+    end
+	
 end
 
 
@@ -726,6 +850,6 @@ end
 ---##################################
 ---#########  ON_UPDATE   ###########
 ---##################################
-function WoWLights:OnUpdate(elapsed)
-
-end
+--function WoWLights:OnUpdate(elapsed)
+--
+--end
