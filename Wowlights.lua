@@ -11,6 +11,12 @@ WoWLights = {}							--  namespace for all addon functions
 WowPtGridSize = 3.35
 WLTexWide = 6
 WLTexHigh = 3
+WLCombatFlashAlpha = 0.6
+
+WLColorBtnUnderEdit = 0
+WLColorRowUnderEdit = 0
+WLColorButtons = {}
+WLOldRowColors = {}
 
 WLhasBeenLoaded = false;
 
@@ -38,23 +44,45 @@ InBetweenZoneNames = "The In-Between Der Zwischenraum La Zona Intermedia Entre-D
 local playerBgGrid = { -- this needs to be loadable and editable; change for character/talent spec
 	redColorInt,  -- array is indexed 1-18
 	blackColorInt,
-	yellowColorInt,
-	blackColorInt,
 	greenColorInt,
+	blackColorInt,
+	blueColorInt,
 	blackColorInt,
 	blackColorInt,
 	orangeColorInt,
 	blackColorInt,
 	magentaColorInt,
 	blackColorInt,
-	blueColorInt,
 	cyanColorInt,
-	blackColorInt,
 	redColorInt,
 	blackColorInt,
 	greenColorInt,
+	blackColorInt,
+	blueColorInt,
 	blackColorInt
 }
+
+local calibrateBgGrid = {
+	redColorInt,
+	blackColorInt,
+	greenColorInt,
+	blackColorInt,
+	blueColorInt,
+	blackColorInt,
+	blackColorInt,
+	orangeColorInt,
+	blackColorInt,
+	magentaColorInt,
+	blackColorInt,
+	cyanColorInt,
+	redColorInt,
+	blackColorInt,
+	greenColorInt,
+	blackColorInt,
+	blueColorInt,
+	blackColorInt
+}
+
 
 
 
@@ -74,25 +102,6 @@ end)
 
 WoWLightsFrame:RegisterEvent("ADDON_LOADED")
 
----------------------- HANDLE SETTINGS BOX CONTROLS -------------
-
-local function pickedNewColor()
-	rr, gg, bb = ColorPickerFrame:GetColorRGB()
-	print("got r="..rr.." g="..gg.." b="..bb)
-end
-
-local function rejectedNewColor()
-	print("cancelled color pick")
-end
-
---local function handleSelectNewColor(colorInt)
---	rr, gg, bb = 0,1.0,0 -- how to do this with function defined below?
---	ColorPickerFrame:SetColorRGB(rr, gg, bb)
---	ColorPickerFrame.func = pickedNewColor
---	ColorPickerFrame.cancelFunc = rejectedNewColor
---	ColorPickerFrame:Hide() 
---	ColorPickerFrame:Show() 
---end
 
 
 ------------------------- CREATE SETTINGS FRAME ----------------------------
@@ -121,16 +130,30 @@ t2:SetText("Click to change one color")
 t2:SetSize(200,36)
 t2:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",108,-138)
 
-local t3 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-t3:SetText("Character: Waldokind")
+local t3t = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+t3t:SetText("Character:")
+t3t:SetSize(200,36)
+t3t:SetJustifyH("CENTER")
+t3t:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",300,-35)
+
+local t3 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontWhite")
+t3:SetText("Waldokind")
 t3:SetSize(200,36)
-t3:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",250,-70)
+t3:SetJustifyH("CENTER")
+t3:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",300,-55)
 WoWLightsOptionsFrame.charString = t3
 
-local t4 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-t4:SetText("Spec: Retribution")
+local t4t = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+t4t:SetText("Specialization:")
+t4t:SetSize(200,36)
+t4t:SetJustifyH("CENTER")
+t4t:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",300,-80)
+
+local t4 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontWhite")
+t4:SetText("Retribution")
 t4:SetSize(200,36)
-t4:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",270,-100)
+t4:SetJustifyH("CENTER")
+t4:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",300,-100)
 WoWLightsOptionsFrame.specString = t4
 
 local t5 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -145,28 +168,22 @@ t6:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",300,-180)
 
 
 local b1 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
-b1:SetText("Set Row 1")
+b1:SetText("Color Row 1")
 b1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",20,-70)
 b1:SetSize(100,24)
-b1:SetScript("OnClick", function(self, btn,down) 
-	ColorPickerFrame:SetColorRGB(0,1.0,0)
-	ColorPickerFrame.func = pickedNewColor
-	ColorPickerFrame.cancelFunc = rejectedNewColor
-	ColorPickerFrame:Hide() 
-	ColorPickerFrame:Show() 
-	end)
+b1:SetScript("OnClick", function(self, btn, down) WoWLights:RecolorColorRow(self,1) end)
 
 local b2 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
-b2:SetText("Set Row 2")
+b2:SetText("Color Row 2")
 b2:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",20,-95)
 b2:SetSize(100,24)
-b2:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT) end)
+b2:SetScript("OnClick", function(self, btn, down) WoWLights:RecolorColorRow(self,2) end)
 
 local b3 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
-b3:SetText("Set Row 3")
+b3:SetText("Color Row 3")
 b3:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",20,-120)
 b3:SetSize(100,24)
-b3:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT) end)
+b3:SetScript("OnClick", function(self, btn, down) WoWLights:RecolorColorRow(self,3) end)
 
 local b4 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
 b4:SetText("Memorize")
@@ -195,12 +212,13 @@ b7:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_Z
 
 local s1 = CreateFrame("Slider","slider",WoWLightsOptionsFrame,"OptionsSliderTemplate")
 s1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",45,-210)
-s1:SetMinMaxValues(3, 10)
-s1:SetValueStep(1)
+s1:SetMinMaxValues(0.3, 1.0)
 sliderLow:SetText("faint")
 sliderHigh:SetText("bright")
-s1:SetValue(6)
-s1:SetScript("OnValueChanged", function(self, evt, arg1) print(evt) end)
+s1:SetValue(WLCombatFlashAlpha)
+s1:SetScript("OnValueChanged", function(self, evt, arg1) 
+	WoWLights:ChangeCombatPulseIntensity(evt)
+end)
 
 
 local e1 = CreateFrame("EditBox",nil,WoWLightsOptionsFrame,"InputBoxTemplate")
@@ -209,8 +227,11 @@ e1:SetSize(50,24)
 e1:SetMultiLine(false)
 e1:SetAutoFocus(false)
 e1:SetFontObject("ChatFontNormal")
-e1:SetText("3.4")
-e1:SetScript("OnEnterPressed", function(self) print(self:GetText()) end)
+e1:SetText(WowPtGridSize)
+e1:SetScript("OnEnterPressed", function(self)
+	--print(self:GetText()) 
+	WoWLights:ChangeFrameSize(self:GetText())
+end)
 
 
 
@@ -273,7 +294,7 @@ local function makeAlloverFrame(ff)
 	aof.fadeInOut:SetLooping("BOUNCE")
 
 	aof.fader = aof.fadeInOut:CreateAnimation("ALPHA")
-	aof.fader:SetFromAlpha(0.8)
+	aof.fader:SetFromAlpha(WLCombatFlashAlpha)
 	aof.fader:SetToAlpha(0.0)
 	aof.fader:SetDuration(1.0)
 	
@@ -520,17 +541,6 @@ local function makePulser(ff, segNum)
 end
 
 
-local function makeColorButton(btnName, colorInt, parent, x, y)
-	local b = CreateFrame("Button",btnName,parent)
-	b:SetPoint("TOPLEFT",parent,"TOPLEFT",x,y)
-	b:SetSize(25,25)
-	b.tex = b:CreateTexture(nil, "OVERLAY")
-	r,g,u = intToColor(colorInt)
-	b.tex:SetColorTexture(r,g,u,1)
-	b:SetNormalTexture(b.tex)
-	b:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_IN) end)
-	return b
-end
 
 
 
@@ -604,6 +614,144 @@ local function updatePulser(pulser, x, y, colorInt, speed)
 	pulser.alphaPulse:SetDuration(speed)
 end
 
+-- Called by settings event handler when the combat lights intensity slider is moved
+local function setCombatFlashMaxAlpha(value)	
+	WoWLightsFrame.alloverFrame.fader:SetFromAlpha(value)
+	WLCombatFlashAlpha = value
+end
+
+
+-- Called by settings event handler when ENTER is pressed in the grid size edit box
+local function updateGridSize(size)
+	-- size is guaranteed to be a number != 0
+	if size ~= WowPtGridSize then	
+	
+		for row=0, WLTexHigh-1 do
+			for col=0, WLTexWide-1 do
+		
+				WoWLightsFrame.baseTex[indexOf(row,col)]:SetColorTexture(0,0,0,0) -- make existing texture translarent
+
+			end
+		end
+	
+		WowPtGridSize = size
+
+		WoWLightsFrame.baseTex = makeBackground(WoWLightsFrame)
+	end
+	
+end
+
+
+--------------------------------- COLOR CHANGE HANDLERS ---------------------------------
+
+-- Called whenever the color wheel value is changed while one color square is being updated
+local function colorSquareChanged()
+	if WLColorBtnUnderEdit ~= nil then
+		rr, gg, bb = ColorPickerFrame:GetColorRGB() -- get the new color
+		colorInt = color1ToInt(rr, gg, bb) -- convert to in Int
+		playerBgGrid[WLColorBtnUnderEdit.colorIndex] = colorInt -- change the prefs	
+		WoWLightsFrame.baseTex[WLColorBtnUnderEdit.colorIndex-1]:SetColorTexture(rr, gg, bb, 1.0) -- change the corner texture
+		WLColorBtnUnderEdit.tex:SetColorTexture(rr,gg,bb,1)	-- change the settings button
+	end
+end
+
+-- Called when the color wheel Cancel button is clicked while one color square is being updated
+local function colorSquareReset()
+	if WLColorBtnUnderEdit ~= nil then
+		colorInt = WLColorBtnUnderEdit.oldColorInt
+		rr, gg, bb = intToColor(colorInt) -- get the old color
+		playerBgGrid[WLColorBtnUnderEdit.colorIndex] = colorInt -- change the prefs	
+		WoWLightsFrame.baseTex[WLColorBtnUnderEdit.colorIndex-1]:SetColorTexture(rr, gg, bb, 1.0) -- change the corner texture
+		WLColorBtnUnderEdit.tex:SetColorTexture(rr,gg,bb,1)	-- change the settings button
+	end
+end
+
+-- Called to make the color wheel appear to change one color square
+local function makeColorButton(index, colorInt, parent, x, y)
+	local b = CreateFrame("Button","colorBtn"..index,parent)
+	b:SetPoint("TOPLEFT",parent,"TOPLEFT",x,y)
+	b:SetSize(24,24)
+	b.tex = b:CreateTexture(nil, "OVERLAY")
+	rr,gg,bb = intToColor(colorInt)
+	b.tex:SetColorTexture(rr,gg,bb,1)
+	b:SetNormalTexture(b.tex)
+	b.colorIndex = index
+	b.oldColorInt = 0
+	b:SetScript("OnClick", function(self, btn,down) -- btn is mouseBtnID; down is boolean
+		PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_IN) 
+		WLColorBtnUnderEdit = self
+		WLColorRowUnderEdit = 0
+		self.oldColorInt = playerBgGrid[self.colorIndex]
+		local rr,gg,bb = intToColor(self.oldColorInt)
+		ColorPickerFrame:SetColorRGB(rr,gg,bb)
+		ColorPickerFrame.func = colorSquareChanged
+		ColorPickerFrame.cancelFunc = colorSquareReset
+		ColorPickerFrame:Hide() 
+		ColorPickerFrame:Show() 
+		end)
+	return b
+end
+
+
+-- Called whenever the color wheel value is changed while a row is being updated
+local function colorRowChanged()
+	if WLColorRowUnderEdit > 0 then
+		rr, gg, bb = ColorPickerFrame:GetColorRGB() -- get the new color
+		colorInt = color1ToInt(rr, gg, bb) -- convert to in Int
+		idxSt = 1 + WLTexWide * (WLColorRowUnderEdit-1)
+		for ii = idxSt, (idxSt + WLTexWide - 1) do
+			playerBgGrid[ii] = colorInt -- change the prefs	
+			WoWLightsFrame.baseTex[ii-1]:SetColorTexture(rr, gg, bb, 1.0) -- change the corner texture
+			WLColorButtons[ii].tex:SetColorTexture(rr,gg,bb,1)	-- change the settings button
+		end
+	end
+end
+
+-- Called when the color wheel Cancel button is clicked while a row is being updated
+local function colorRowReset()
+	if WLColorRowUnderEdit > 0 then
+		srcIndex = 1 + WLTexWide * (WLColorRowUnderEdit-1)  -- 1, 7, or 13
+		for ii = srcIndex, (srcIndex + WLTexWide - 1) do
+			colorInt = WLOldRowColors[ii-srcIndex]
+			rr, gg, bb = intToColor(colorInt) -- get the old color
+			playerBgGrid[ii] = colorInt -- change the prefs	
+			WoWLightsFrame.baseTex[ii-1]:SetColorTexture(rr, gg, bb, 1.0) -- change the corner texture
+			WLColorButtons[ii].tex:SetColorTexture(rr,gg,bb,1)	-- change the settings button
+		end
+	end
+end
+
+-- Called to make the color wheel appear to change one row
+function WoWLights:RecolorColorRow(self,rowNum)
+	PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_IN)
+	srcIndex = 1 + WLTexWide * (rowNum-1)  -- 1, 7, or 13
+	WLColorRowUnderEdit = rowNum  -- 1, 2, 3
+	WLColorBtnUnderEdit = nil
+	for i = srcIndex, srcIndex + WLTexWide - 1 do
+		WLOldRowColors[i-srcIndex] = playerBgGrid[i]	
+	end
+	nowColorInt = playerBgGrid[srcIndex]
+	local rr,gg,bb = intToColor(nowColorInt)
+	ColorPickerFrame:SetColorRGB(rr,gg,bb)
+	ColorPickerFrame.func = colorRowChanged
+	ColorPickerFrame.cancelFunc = colorRowReset
+	ColorPickerFrame:Hide() 
+	ColorPickerFrame:Show() 
+end
+
+-- Called by slider control when the combat lights intensity slider is moved
+function WoWLights:ChangeCombatPulseIntensity(value)
+	setCombatFlashMaxAlpha(value) -- actual event handler
+end
+
+
+-- Called by edit box when ENTER is pressed in the grid size edit box
+function WoWLights:ChangeFrameSize(sizeText)
+	num = tonumber(sizeText)
+	if num ~= nil then
+		updateGridSize(num)
+	end
+end
 
 
 ------------------------ DEFINE TRIGGERED ANIMATIONS -----------------------
@@ -741,12 +889,14 @@ local function OnLoad(ff)
 	
 	-- create the light color programming buttons for settings
 	for row = 0,2 do
-		for col = 0, 5 do		
-			makeColorButton(row..col, playerBgGrid[1+indexOf(row,col)], WoWLightsOptionsFrame, 130+(25*col), -70-25*row)
+		for col = 0, 5 do
+			local index = 1+indexOf(row,col)
+			WLColorButtons[index] = makeColorButton(index, playerBgGrid[index], WoWLightsOptionsFrame, 130+(25*col), -70-25*row)
 		end
     end
 	
 end
+
 
 
 ---##################################
