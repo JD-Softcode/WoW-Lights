@@ -8,15 +8,14 @@ SLASH_WOWLT1 = "/wlights"
 
 WoWLights = {}							--  namespace for all addon functions
 
-WowPtGridSize = 3.35
 WLTexWide = 6
 WLTexHigh = 3
-WLCombatFlashAlpha = 0.6
 
 WLColorBtnUnderEdit = 0
 WLColorRowUnderEdit = 0
 WLColorButtons = {}
 WLOldRowColors = {}
+WLUndoColorSetBuffer = {}
 
 WLhasBeenLoaded = false;
 
@@ -37,32 +36,40 @@ local deathColorInt = 6579300
 
 local combatColorInt = redColorInt
 
+local defaultRow1 = 9183139
+local defaultRow2 = 5973872
+local defaultRow3 = 3542625
+
 OribosZoneNames = "Oribos Орибос"	--  All western + Russian
 InBetweenZoneNames = "The In-Between Der Zwischenraum La Zona Intermedia Entre-Deux O Intermédio Промежуток" 
-										--  English, German, Spanish, French, Portugues, Russian
+										--  English, German, Spanish, French, Portugues, Russian			
+-- ADD ON SAVED GLOBALS
+-- WLProfileMemory = {}
+-- WLGridSqSize = 3.35
+-- WLCombatFlashAlpha = 0.6
 
-local playerBgGrid = { -- this needs to be loadable and editable; change for character/talent spec
-	redColorInt,  -- array is indexed 1-18
-	blackColorInt,
-	greenColorInt,
-	blackColorInt,
-	blueColorInt,
-	blackColorInt,
-	blackColorInt,
-	orangeColorInt,
-	blackColorInt,
-	magentaColorInt,
-	blackColorInt,
-	cyanColorInt,
-	redColorInt,
-	blackColorInt,
-	greenColorInt,
-	blackColorInt,
-	blueColorInt,
-	blackColorInt
+local playerBgGrid = { -- default colors shown if no name/realm/spec color profile is saved for this character
+	defaultRow1,
+	defaultRow1,
+	defaultRow1,
+	defaultRow1,
+	defaultRow1,
+	defaultRow1,
+	defaultRow2,
+	defaultRow2,
+	defaultRow2,
+	defaultRow2,
+	defaultRow2,
+	defaultRow2,
+	defaultRow3,
+	defaultRow3,
+	defaultRow3,
+	defaultRow3,
+	defaultRow3,
+	defaultRow3
 }
 
-local calibrateBgGrid = {
+local calibrateBgGrid = { -- shown when the "Cal Colors" button is clicked in setting window
 	redColorInt,
 	blackColorInt,
 	greenColorInt,
@@ -189,7 +196,7 @@ local b4 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate
 b4:SetText("Memorize")
 b4:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",350,-140)
 b4:SetSize(100,24)
-b4:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT) end)
+b4:SetScript("OnClick", function(self, btn,down) WoWLights:MemorizeColors() end)
 
 local b5 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
 b5:SetText("Reset Animation")
@@ -201,13 +208,28 @@ local b6 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate
 b6:SetText("Cancel")
 b6:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",270,-270)
 b6:SetSize(100,24)
-b6:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT) end)
+b6:SetScript("OnClick", function(self, btn,down)
+	WoWLightsOptionsFrame:Hide()
+	WoWLights:HandleSettingsCancel()
+	end)
 
 local b7 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
 b7:SetText("OK")
 b7:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",380,-270)
 b7:SetSize(100,24)
-b7:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT) end)
+b7:SetScript("OnClick", function(self, btn,down) 
+	PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT)
+	WoWLightsOptionsFrame:Hide()
+	-- the normal handlers change the saved globals as we go so don't need to do anything extra now
+	end)
+	
+local b8 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIMenuButtonStretchTemplate")
+b8:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",373,-235)
+b8:SetText("Cal Colors")
+b8:SetSize(55,16)
+b8:SetScript("OnClick", function(self, btn,down)
+	WoWLights:HandleShowCalibrationPattern()
+	end)
 
 
 local s1 = CreateFrame("Slider","slider",WoWLightsOptionsFrame,"OptionsSliderTemplate")
@@ -215,28 +237,25 @@ s1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",45,-210)
 s1:SetMinMaxValues(0.3, 1.0)
 sliderLow:SetText("faint")
 sliderHigh:SetText("bright")
-s1:SetValue(WLCombatFlashAlpha)
+WoWLightsOptionsFrame.flasherInput = s1
+--s1:SetValue(WLCombatFlashAlpha)
 s1:SetScript("OnValueChanged", function(self, evt, arg1) 
 	WoWLights:ChangeCombatPulseIntensity(evt)
 end)
 
 
 local e1 = CreateFrame("EditBox",nil,WoWLightsOptionsFrame,"InputBoxTemplate")
-e1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",378,-212)
+e1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",378,-210)
 e1:SetSize(50,24)
 e1:SetMultiLine(false)
 e1:SetAutoFocus(false)
 e1:SetFontObject("ChatFontNormal")
-e1:SetText(WowPtGridSize)
+WoWLightsOptionsFrame.sizeInput = e1
+--e1:SetText(WLGridSqSize)
 e1:SetScript("OnEnterPressed", function(self)
 	--print(self:GetText()) 
 	WoWLights:ChangeFrameSize(self:GetText())
 end)
-
-
-
----------------------------- SLASH COMMAND HANDERS ---------------------------
-SlashCmdList["WOWLT"] = function(msg, theEditFrame) WoWLightsOptionsFrame:Show() end
 
 
 
@@ -248,11 +267,23 @@ end
 
 -- returns x,y: a random point between (0,0) and (17,7) on default scaling
 local function randomGridPoint()
-	local xMax = 0.5 + (WLTexWide-1) * WowPtGridSize
-	local yMax = 0.5 + (WLTexHigh-1) * WowPtGridSize
+	local xMax = 0.5 + (WLTexWide-1) * WLGridSqSize
+	local yMax = 0.5 + (WLTexHigh-1) * WLGridSqSize
 	return fastrandom(0,xMax), fastrandom(0,yMax)
 	
 end
+
+local function setSettingsPlayerInfoAndGetColorSetKey()
+	local playerName = UnitName("PLAYER")
+	local playerRealm = GetRealmName()
+	local specIndex = GetSpecialization()
+	local playerSpec = select(2, GetSpecializationInfo(specIndex))
+	if playerSpec == nil then return end -- handle the extra early call before spec info is available
+	WoWLightsOptionsFrame.charString:SetText(playerName)
+	WoWLightsOptionsFrame.specString:SetText(playerSpec)
+	return playerName..playerRealm..playerSpec
+end
+
 
 -------------------------- COLOR CONVERT UTILITIES -----------------------------
 
@@ -275,13 +306,36 @@ local function intToColor(color)
 end
 
 
+---------------------------- SLASH COMMAND HANDERS ---------------------------
+
+
+SlashCmdList["WOWLT"] = function(msg, theEditFrame)			-- /wlights
+
+	WoWLightsOptionsFrame.flasherInput:SetValue(WLCombatFlashAlpha)
+	WoWLightsOptionsFrame.sizeInput:SetText(WLGridSqSize)
+
+	for i=1, WLTexWide * WLTexHigh do
+		local colorInt = playerBgGrid[i]
+		WLUndoColorSetBuffer[i] = colorInt
+		rr,gg,bb = intToColor(colorInt)
+		WLColorButtons[i].tex:SetColorTexture(rr,gg,bb,1)
+	end	
+	
+	WLUndoFlasherInput = WLCombatFlashAlpha
+	WLUndoGridSizeInput = WLGridSqSize
+
+	WoWLightsOptionsFrame:Show() 
+end
+
+
+
 ------------------ BUILDERS FOR THE GRAPHIC COMPONENTS --------------------
 
 -- create the overlay zone that appears on all the keys at once
 local function makeAlloverFrame(ff)
 
 	local aof = CreateFrame("Frame","$parentOverall",ff)
-	aof:SetSize(WowPtGridSize * WLTexWide, WowPtGridSize * WLTexHigh)
+	aof:SetSize(WLGridSqSize * WLTexWide, WLGridSqSize * WLTexHigh)
 	aof:SetPoint("TOPLEFT", ff, "TOPLEFT", 0, 0)
 
 	aof.tex = aof:CreateTexture("allOverTex","OVERLAY")
@@ -301,6 +355,22 @@ local function makeAlloverFrame(ff)
 	return aof
 end
 
+-- create the overlay of the overlay that appears on all the keys at once
+local function makeCurtainFrame(ff)
+
+	local aof = CreateFrame("Frame","$parentCurtain",ff)
+	aof:SetSize(WLGridSqSize * WLTexWide, WLGridSqSize * WLTexHigh)
+	aof:SetPoint("TOPLEFT", ff, "TOPLEFT", 0, 0)
+
+	aof.tex = aof:CreateTexture("allOverTex","OVERLAY")
+	aof.tex:SetAllPoints()
+	local tr, tg, tb = intToColor(blackColorInt)
+	aof.tex:SetColorTexture(tr, tg, tb, 1)
+	aof:SetAlpha(0)
+
+	return aof
+end
+
 -- construct the background lights grid of 18 samples using global var: playerBgGrid
 local function makeBackground(ff)
 	local baseTex = {}
@@ -308,8 +378,8 @@ local function makeBackground(ff)
 		for c = 0, WLTexWide-1 do
 			local bgColor = playerBgGrid[indexOf(r,c)+1]
 			local tex = ff:CreateTexture("bgTex","BACKGROUND")
-			tex:SetSize(WowPtGridSize,WowPtGridSize)
-			tex:SetPoint("BOTTOMLEFT", ff, "BOTTOMLEFT", c*WowPtGridSize, (WLTexHigh-1-r)*WowPtGridSize)
+			tex:SetSize(WLGridSqSize,WLGridSqSize)
+			tex:SetPoint("BOTTOMLEFT", ff, "BOTTOMLEFT", c*WLGridSqSize, (WLTexHigh-1-r)*WLGridSqSize)
 			local tr, tg, tb = intToColor(bgColor)
 			tex:SetColorTexture(tr, tg, tb, 1)	
 			baseTex[indexOf(r,c)] = tex
@@ -323,7 +393,7 @@ end
 local function makeMoneyWipe(ff)
 
 	local wiper = CreateFrame("Frame","$parentWiper",ff)
-	wiper:SetSize(WowPtGridSize*WLTexWide,WowPtGridSize)
+	wiper:SetSize(WLGridSqSize*WLTexWide,WLGridSqSize)
 	wiper:SetPoint("TOPLEFT", ff, "TOPLEFT", 0, 0)
 
 	wiper.tex = wiper:CreateTexture("wipeTex","ARTWORK")
@@ -336,7 +406,7 @@ local function makeMoneyWipe(ff)
 	wiper.wipeDown:SetLooping("NONE")
 
 	wiper.wipe = wiper.wipeDown:CreateAnimation("TRANSLATION")
-	wiper.wipe:SetOffset(0,-(WowPtGridSize-1)*WLTexHigh)
+	wiper.wipe:SetOffset(0,-(WLGridSqSize-1)*WLTexHigh)
 	wiper.wipe:SetDuration(0.5)
 	
 	wiper.wipe:SetScript("OnPlay", function(self)
@@ -354,7 +424,7 @@ end
 -- helper to create part of the multi-part vertical animation frame
 local function makeVerticalWipeSegment(ff, segNum, colorInt, duration, startDelay)
 	local wiper = CreateFrame("Frame","$parentVertWipe"..segNum,ff)
-	wiper:SetSize(WowPtGridSize*WLTexWide,WowPtGridSize)
+	wiper:SetSize(WLGridSqSize*WLTexWide,WLGridSqSize)
 	wiper:SetPoint("TOPLEFT", ff, "TOPLEFT", 0, 0)
 
 	wiper.tex = wiper:CreateTexture("vwipeTex"..segNum,"ARTWORK",-segNum)
@@ -367,7 +437,7 @@ local function makeVerticalWipeSegment(ff, segNum, colorInt, duration, startDela
 	wiper.wipeDown:SetLooping("NONE")
 
 	wiper.wipe = wiper.wipeDown:CreateAnimation("TRANSLATION")
-	wiper.wipe:SetOffset(0,-(WowPtGridSize-1)*WLTexHigh)
+	wiper.wipe:SetOffset(0,-(WLGridSqSize-1)*WLTexHigh)
 	wiper.wipe:SetDuration(duration)
 	wiper.wipe:SetStartDelay(startDelay)
 	
@@ -402,7 +472,7 @@ end
 -- helper to create part of a multi-part horizontal animation frame
 local function makeHorizontalWipeSegment(ff, segNum, colorInt, duration, startDelay)
 	local wiper = CreateFrame("Frame","$parentHorzWipe"..segNum,ff)
-	wiper:SetSize(WowPtGridSize, WLTexHigh*WowPtGridSize)
+	wiper:SetSize(WLGridSqSize, WLTexHigh*WLGridSqSize)
 	wiper:SetPoint("TOPLEFT", ff, "TOPLEFT", 0, 0)
 
 	wiper.tex = wiper:CreateTexture("hwipeTex"..segNum,"ARTWORK",-segNum)
@@ -415,7 +485,7 @@ local function makeHorizontalWipeSegment(ff, segNum, colorInt, duration, startDe
 	wiper.wipeRight:SetLooping("NONE")
 
 	wiper.wipe = wiper.wipeRight:CreateAnimation("TRANSLATION")
-	wiper.wipe:SetOffset(WowPtGridSize*WLTexWide, 0)
+	wiper.wipe:SetOffset(WLGridSqSize*WLTexWide, 0)
 	wiper.wipe:SetDuration(duration)
 	wiper.wipe:SetStartDelay(startDelay)
 	
@@ -452,7 +522,7 @@ end
 -- helper to create a horizontal bar moving from center
 local function makeHorizontalMirrorSegment(ff, segNum, colorInt, duration, startDelay, moveSign)
 	local wiper = CreateFrame("Frame","$parentMirrorWipe"..segNum,ff)
-	wiper:SetSize(WowPtGridSize, WLTexHigh*WowPtGridSize)
+	wiper:SetSize(WLGridSqSize, WLTexHigh*WLGridSqSize)
 	wiper:SetPoint("CENTER", ff, "CENTER", 0, 0)
 
 	wiper.tex = wiper:CreateTexture("hwipeTex"..segNum,"ARTWORK")
@@ -465,7 +535,7 @@ local function makeHorizontalMirrorSegment(ff, segNum, colorInt, duration, start
 	wiper.wipeOut:SetLooping("NONE")
 
 	wiper.wipe = wiper.wipeOut:CreateAnimation("TRANSLATION")
-	wiper.wipe:SetOffset(WowPtGridSize*WLTexWide*moveSign/2, 0)
+	wiper.wipe:SetOffset(WLGridSqSize*WLTexWide*moveSign/2, 0)
 	wiper.wipe:SetDuration(duration)
 	wiper.wipe:SetStartDelay(startDelay)
 	
@@ -522,12 +592,11 @@ end
 -- helper to create a color-pulsing square
 local function makePulser(ff, segNum)
 	local pulser = CreateFrame("Frame","$parentPulser"..segNum,ff)
-	pulser:SetSize(WowPtGridSize,WowPtGridSize)
+	pulser:SetSize(WLGridSqSize,WLGridSqSize)
 	pulser:SetPoint("TOPLEFT", ff, "TOPLEFT", 0, 0)
 
 	pulser.tex = pulser:CreateTexture("pulserTex"..segNum,"ARTWORK",-segNum)
 	pulser.tex:SetAllPoints()
---	pulser.tex:SetColorTexture(1,1,1,1)
 	pulser:SetAlpha(0) -- texture is hidden while not animating
 
 	pulser.pulse = pulser:CreateAnimationGroup()
@@ -553,7 +622,7 @@ local function setAlloverColor(alloverFrame, colorInt, a, vis)
 	if vis == nil then
 		vis = 1.0
 	end
-	aof:SetAlpha(vis)
+	alloverFrame:SetAlpha(vis)
 end
 
 -- void: setBackgroundColor(ff.baseTex, row/0-2, column/0-5, colorInt)
@@ -583,8 +652,6 @@ local function applyPlayerDefaultBackColors(bg)
 		local r,g,b = intToColor(playerBgGrid[i+1])
 		bg[i]:SetColorTexture(r, g, b, 1.0)
 	end
---	r,g,b = GetClassColor(UnitClassBase("PLAYER"))
---	bg[0]:SetColorTexture(r, g, b, 1.0);
 end
 
 -- void: applyCheckerboard(ff.baseTex, colorInt_1, colorInt_2)
@@ -624,21 +691,15 @@ end
 -- Called by settings event handler when ENTER is pressed in the grid size edit box
 local function updateGridSize(size)
 	-- size is guaranteed to be a number != 0
-	if size ~= WowPtGridSize then	
-	
+	if size ~= WLGridSqSize then	
 		for row=0, WLTexHigh-1 do
 			for col=0, WLTexWide-1 do
-		
 				WoWLightsFrame.baseTex[indexOf(row,col)]:SetColorTexture(0,0,0,0) -- make existing texture translarent
-
 			end
 		end
-	
-		WowPtGridSize = size
-
+		WLGridSqSize = size
 		WoWLightsFrame.baseTex = makeBackground(WoWLightsFrame)
 	end
-	
 end
 
 
@@ -753,6 +814,37 @@ function WoWLights:ChangeFrameSize(sizeText)
 	end
 end
 
+-- Called by Memorize button in settings box
+function WoWLights:MemorizeColors()
+	PlaySound(SOUNDKIT.IG_QUEST_LIST_OPEN)
+	local colorSetKey = setSettingsPlayerInfoAndGetColorSetKey()
+	WLProfileMemory[colorSetKey] = playerBgGrid -- store the current 18 colors in the global saved table
+end
+
+-- Called when the Cancel button is clicked
+function WoWLights:HandleSettingsCancel()
+	PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT)
+	WoWLightsOptionsFrame:Hide()	
+	for i=1, WLTexWide * WLTexHigh do
+		playerBgGrid[i] = WLUndoColorSetBuffer[i] 
+	end	
+	applyPlayerDefaultBackColors(WoWLightsFrame.baseTex)
+	setCombatFlashMaxAlpha(WLUndoFlasherInput)
+	updateGridSize(WLUndoGridSizeInput)
+end
+
+-- Called when the Cal Colors button is pressed
+function WoWLights:HandleShowCalibrationPattern()
+	print("HINT: Use the Cancel button to undo the pattern change and return to what you had before.")
+	for i=1, WLTexWide * WLTexHigh do
+		local colorInt = calibrateBgGrid[i]
+		playerBgGrid[i] = colorInt
+		rr,gg,bb = intToColor(colorInt)
+		WLColorButtons[i].tex:SetColorTexture(rr,gg,bb,1)
+	end	
+	applyPlayerDefaultBackColors(WoWLightsFrame.baseTex)
+end
+
 
 ------------------------ DEFINE TRIGGERED ANIMATIONS -----------------------
 
@@ -835,11 +927,24 @@ end
 ---##################################
 local function OnLoad(ff)
 	
-	-- placement and size of WoW Lights
-	ff:SetSize(WowPtGridSize * WLTexWide, WowPtGridSize * WLTexHigh)
+	-- Initialize global saved vars if this is the first time we're ever starting
+	if WLGridSqSize == nil or WLGridSqSize <= 0 then
+		WLGridSqSize = 3.35
+	end
+	if WLCombatFlashAlpha == nil or WLCombatFlashAlpha <= 0 then
+		WLCombatFlashAlpha = 0.8
+	end
+	
+	if WLProfileMemory == nil then
+		WLProfileMemory = {}
+	end
+	
+	-- place and size WoW Lights
+	ff:SetSize(WLGridSqSize * WLTexWide, WLGridSqSize * WLTexHigh)
 	ff:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 0)
 
 	ff.alloverFrame = makeAlloverFrame(ff)
+	ff.curtainFrame = makeCurtainFrame(ff)
 	ff.baseTex = makeBackground(ff)
 	ff.moneyAnim = makeMoneyWipe(ff)
 	ff.rainbowAnim = makeVerticalRainbowWipe(ff)
@@ -851,17 +956,29 @@ local function OnLoad(ff)
 		ff.pulsers[i] = makePulser(ff, i)
 	end	
 	
+	ff.curtainFrame:SetFrameStrata("DIALOG") --highest
 	ff.alloverFrame:SetFrameStrata("HIGH")
 	ff.moneyAnim:SetFrameStrata("MEDIUM")
 
+	ff.wasMoney = GetMoney()	
+	
+	-- create the light color programming buttons for settings window
+	for row = 0,2 do
+		for col = 0, 5 do
+			local index = 1+indexOf(row,col)
+			WLColorButtons[index] = makeColorButton(index, playerBgGrid[index], WoWLightsOptionsFrame, 130+(25*col), -70-25*row)
+		end
+    end
+
 	-- events I'm interested in:
 	ff:RegisterEvent("PLAYER_ENTERING_WORLD")
-	ff:RegisterEvent("PLAYER_STARTED_MOVING")
-	ff:RegisterEvent("PLAYER_STOPPED_MOVING")
+--	ff:RegisterEvent("PLAYER_STARTED_MOVING")
+--	ff:RegisterEvent("PLAYER_STOPPED_MOVING")
 	ff:RegisterEvent("PLAYER_REGEN_DISABLED")
 	ff:RegisterEvent("PLAYER_REGEN_ENABLED")
 	ff:RegisterEvent("PLAYER_MONEY")
 	ff:RegisterEvent("TRANSMOGRIFY_SUCCESS")
+	ff:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
 	ff:RegisterEvent("NEW_TOY_ADDED")
 	ff:RegisterEvent("ACHIEVEMENT_EARNED")
 	ff:RegisterEvent("PLAYER_LEVEL_UP")
@@ -874,28 +991,13 @@ local function OnLoad(ff)
 	ff:RegisterEvent("CHAT_MSG_RAID_WARNING")
 	ff:RegisterEvent("HEARTHSTONE_BOUND")
 	ff:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-	
-	-- logic to filter on not every talent change?
-	ff:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
+	ff:RegisterEvent("PLAYER_CONTROL_GAINED")
+	ff:RegisterEvent("PLAYER_CONTROL_LOST")
 	
 	-- TODO
-	f:RegisterEvent("PLAYER_CONTROL_GAINED")
-	f:RegisterEvent("PLAYER_CONTROL_LOST") -- darken the lights to indicate out of control
-
-	
-
-	
-	ff.wasMoney = GetMoney()	
-	
-	-- create the light color programming buttons for settings
-	for row = 0,2 do
-		for col = 0, 5 do
-			local index = 1+indexOf(row,col)
-			WLColorButtons[index] = makeColorButton(index, playerBgGrid[index], WoWLightsOptionsFrame, 130+(25*col), -70-25*row)
-		end
-    end
-	
+	--Chat window open/close?	
 end
+
 
 
 
@@ -906,6 +1008,17 @@ function WoWLights:OnEvent(ff,event, ...)
 	--print("WoW lights Event: "..event)
 	local arg1, arg2 = ...;
     if event == "PLAYER_ENTERING_WORLD" then        -- set stuff up
+    
+		local colorSetKey = setSettingsPlayerInfoAndGetColorSetKey()
+		if colorSetKey ~= nil and WLProfileMemory ~= nil and WLProfileMemory[colorSetKey] ~= nil then
+			for i=1, WLTexWide * WLTexHigh do
+				local colorInt = WLProfileMemory[colorSetKey][i]
+				playerBgGrid[i] = colorInt
+				rr,gg,bb = intToColor(colorInt)
+				WLColorButtons[i].tex:SetColorTexture(rr,gg,bb,1)
+			end	
+			applyPlayerDefaultBackColors(WoWLightsFrame.baseTex)
+		end
         WoWLightsFrame:Show()
         
     elseif event == "ADDON_LOADED" then
@@ -914,21 +1027,11 @@ function WoWLights:OnEvent(ff,event, ...)
     		WLhasBeenLoaded = true
     	end
     	        
-    	        
-    	        
-    elseif event == "PLAYER_STARTED_MOVING" then
+--    elseif event == "PLAYER_STARTED_MOVING" then
 --		setBackgroundTexColor(ff.baseTex, 0, 1, whiteColorInt)
---		setBackgroundTexColor(ff.baseTex, 0, 3, whiteColorInt)
---		setBackgroundTexColor(ff.baseTex, 0, 5, whiteColorInt)
 
-		
-
-    elseif event == "PLAYER_STOPPED_MOVING" then
+--    elseif event == "PLAYER_STOPPED_MOVING" then
 --    	setBackgroundTexColor(ff.baseTex, 0, 1, blackColorInt)
---    	setBackgroundTexColor(ff.baseTex, 0, 3, blackColorInt)
---    	setBackgroundTexColor(ff.baseTex, 0, 5, blackColorInt)
-    	
-    	
     	
     elseif event == "PLAYER_REGEN_DISABLED" then
     	ff.alloverFrame.fadeInOut:Play()
@@ -944,8 +1047,10 @@ function WoWLights:OnEvent(ff,event, ...)
 		C_Timer.After(1.5, function() ff:RegisterEvent("TRANSMOGRIFY_SUCCESS") end)
 
     elseif event == "ACTIVE_TALENT_GROUP_CHANGED" then
-		for i,wiper in ipairs(ff.talentAnim) do
-			wiper.wipeRight:Play()
+    	if arg2 ~= 0 then    -- arg2 == 0 only upon initial character login to the game world
+			for i,wiper in ipairs(ff.talentAnim) do
+				wiper.wipeRight:Play()
+			end
 		end
 
     elseif event == "ACHIEVEMENT_EARNED" or event == "PLAYER_LEVEL_UP" then
@@ -987,9 +1092,10 @@ function WoWLights:OnEvent(ff,event, ...)
 	elseif event == "ZONE_CHANGED_NEW_AREA" then
 		updateInBetweenFlight(ff)
 
-
-
-
+	elseif event == "PLAYER_CONTROL_LOST" then
+		setAlloverColor(ff.curtainFrame, blackColorInt, 0.5, 1.0) -- set curtain to 50% black
+	elseif event == "PLAYER_CONTROL_GAINED" then
+		setAlloverColor(ff.curtainFrame, blackColorInt, 1.0, 0.0) -- set curtain to transparent
 
     else
     	print("WoWLights: Registered for but didn't handle "..event)  
