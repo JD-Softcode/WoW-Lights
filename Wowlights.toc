@@ -1,7 +1,7 @@
-## Interface: 90205
-## Title: WoW Lights 0.3
-## Version: 0.3
-## Notes: Works with |cff00ffffLogitech G-Hub|r on Mac and Windows to animate RGB LED keyboard lights responding to in-game events.
+## Interface: 90207
+## Title: WoW Lights 0.5
+## Version: 0.5
+## Notes: Shows a small window of animated |cffff0000c|r|cffffff00o|r|cff00ff00l|r|cff0000ffo|r|cffff00ffr|r responding to in-game events suitable for sampling onto RGB LED keyboards.
 ## SavedVariables: WLProfileMemory, WLGridSqSize, WLCombatFlashAlpha
 ## Author: waldokind@jdsoftcode.net
 ## X-Website: http://www.jdsoftcode.net

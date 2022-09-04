@@ -1,16 +1,18 @@
 ﻿--   ## WoW Lights - ©2022 J∆•Softcode (www.jdsoftcode.net) ##
 
--------------------------- DEFINE USER SLASH COMMANDS ------------------------
+------------------------------- DEFINE USER SLASH COMMANDS ----------------------------
 
 SLASH_WOWLT1 = "/wlights"
+SLASH_WOWLT2 = "/wowlights"
 
--------------------------- ADD-ON GLOBALS ------------------------
+------------------------------------ ADD-ON GLOBALS ----------------------------------
 
-WoWLights = {}							--  namespace for all addon functions
+WoWLights = {} --  namespace for addon functions
 
-WLTexWide = 6
-WLTexHigh = 3
+WLTexWide = 6 -- width of the color grid
+WLTexHigh = 3 -- height of the color grid
 
+-- Following values used when editing colors
 WLColorBtnUnderEdit = 0
 WLColorRowUnderEdit = 0
 WLColorButtons = {}
@@ -30,7 +32,7 @@ local blueColorInt    = 255
 local magentaColorInt = 16711935
 
 local goldColorInt = yellowColorInt
-local silverColorInt = 8421504
+local silverColorInt = 12632256
 local copperColorInt = 12023884
 local deathColorInt = 6579300
 
@@ -43,10 +45,10 @@ local defaultRow3 = 3542625
 OribosZoneNames = "Oribos Орибос"	--  All western + Russian
 InBetweenZoneNames = "The In-Between Der Zwischenraum La Zona Intermedia Entre-Deux O Intermédio Промежуток" 
 										--  English, German, Spanish, French, Portugues, Russian			
--- ADD ON SAVED GLOBALS
+-- ADD-ON SAVED GLOBALS, loaded by WoW
 -- WLProfileMemory = {}
--- WLGridSqSize = 3.35
--- WLCombatFlashAlpha = 0.6
+-- WLGridSqSize
+-- WLCombatFlashAlpha
 
 local playerBgGrid = { -- default colors shown if no name/realm/spec color profile is saved for this character
 	defaultRow1,
@@ -93,9 +95,10 @@ local calibrateBgGrid = { -- shown when the "Cal Colors" button is clicked in se
 
 
 
------------------------------- STARTUP MAIN FRAME  ---------------------------
+----------------------------------- STARTUP MAIN FRAME  ---------------------------------
 
 WoWLightsFrame = CreateFrame("Frame","WoW Lights",UIParent)
+
 WoWLightsFrame:SetFrameStrata("LOW")
 -- ?? do not parent="UIParent" so my frame remains while interface is hidden, and does not scale up/down with UI
 
@@ -111,7 +114,7 @@ WoWLightsFrame:RegisterEvent("ADDON_LOADED")
 
 
 
-------------------------- CREATE SETTINGS FRAME ----------------------------
+-------------------------------- CREATE SETTINGS FRAME --------------------------------
 
 WoWLightsOptionsFrame = CreateFrame("Frame","WoWLightsOpt",UIParent,"PortraitFrameTemplate")
 WoWLightsOptionsFrame:Hide()
@@ -120,12 +123,27 @@ WoWLightsOptionsFrame:SetPoint("CENTER")
 WoWLightsOptionsFrame:SetSize(500,300)
 WoWLightsOptionsFrame:SetScript("OnShow", function(self, ff) PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN) end)
 WoWLightsOptionsFrame:SetScript("OnHide", function(self, ff) PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE) end)
-WoWLightsOptPortrait:SetTexture("Interface\\MERCHANTFRAME\\UI-BuyBack-Icon")
+WoWLightsOptPortrait:SetTexture("Interface\\ICONS\\Achievement_DoubleRainbow")
+--WoWLightsOptPortrait:SetTexture("Interface\\ICONS\\INV_Misc_PunchCards_Prismatic")
+--WoWLightsOptPortrait:SetTexture("Interface\\ICONS\\Pet_Type_Mechanical")
+--WoWLightsOptPortrait:SetTexture("Interface\\MacroFrame\\MacroFrame-Icon")
 
-local t = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-t:SetText("WoW Lights Settings")
-t:SetSize(200,36)
-t:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",160,7)
+WoWLightsOptCloseButton:SetScript("OnEnter", function(self, motion)
+	local tooltip = GetAppropriateTooltip();
+	tooltip:SetOwner(self, "ANCHOR_RIGHT");
+	tooltip:SetText("Same as OK button; all changes will be saved.");
+	tooltip:Show();
+	end)
+WoWLightsOptCloseButton:SetScript("OnLeave", function(self)
+	local tooltip = GetAppropriateTooltip();
+	if tooltip:GetOwner() == self then tooltip:Hide(); end
+	end)
+
+--local t = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+--t:SetText("WoW Lights Settings")
+--t:SetSize(200,36)
+--t:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",160,7)
+WoWLightsOptTitleText:SetText("WoW Lights Settings")
 
 local t1 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 t1:SetText("Keyboard Basic Colors")
@@ -220,6 +238,7 @@ b7:SetSize(100,24)
 b7:SetScript("OnClick", function(self, btn,down) 
 	PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT)
 	WoWLightsOptionsFrame:Hide()
+	ColorPickerFrame:Hide() 
 	-- the normal handlers change the saved globals as we go so don't need to do anything extra now
 	end)
 	
@@ -230,6 +249,16 @@ b8:SetSize(55,16)
 b8:SetScript("OnClick", function(self, btn,down)
 	WoWLights:HandleShowCalibrationPattern()
 	end)
+b8:SetScript("OnEnter", function(self, motion)
+	local tooltip = GetAppropriateTooltip();
+	tooltip:SetOwner(self, "ANCHOR_RIGHT");
+	tooltip:SetText("Place calibration pattern on the lights. Cancel to remove.");
+	tooltip:Show();
+	end)
+b8:SetScript("OnLeave", function(self)
+	local tooltip = GetAppropriateTooltip();
+	if tooltip:GetOwner() == self then tooltip:Hide(); end
+	end)
 
 
 local s1 = CreateFrame("Slider","slider",WoWLightsOptionsFrame,"OptionsSliderTemplate")
@@ -238,7 +267,6 @@ s1:SetMinMaxValues(0.3, 1.0)
 sliderLow:SetText("faint")
 sliderHigh:SetText("bright")
 WoWLightsOptionsFrame.flasherInput = s1
---s1:SetValue(WLCombatFlashAlpha)
 s1:SetScript("OnValueChanged", function(self, evt, arg1) 
 	WoWLights:ChangeCombatPulseIntensity(evt)
 end)
@@ -251,15 +279,12 @@ e1:SetMultiLine(false)
 e1:SetAutoFocus(false)
 e1:SetFontObject("ChatFontNormal")
 WoWLightsOptionsFrame.sizeInput = e1
---e1:SetText(WLGridSqSize)
 e1:SetScript("OnEnterPressed", function(self)
-	--print(self:GetText()) 
 	WoWLights:ChangeFrameSize(self:GetText())
 end)
 
 
-
---------------------------- GRID MATH UTILITIES -----------------------------
+-------------------------------- GRID MATH UTILITIES ----------------------------------
 -- returns array index (0-17) of background grid location (row, col)
 local function indexOf(row, col)
 	return row*WLTexWide + col
@@ -285,7 +310,7 @@ local function setSettingsPlayerInfoAndGetColorSetKey()
 end
 
 
--------------------------- COLOR CONVERT UTILITIES -----------------------------
+------------------------------ COLOR CONVERT UTILITIES ---------------------------------
 
 -- convert red, green, and blue in floating point 0...1 scale to a colorInt
 local function color1ToInt(r, g, b)
@@ -306,7 +331,7 @@ local function intToColor(color)
 end
 
 
----------------------------- SLASH COMMAND HANDERS ---------------------------
+-------------------------------- SLASH COMMAND HANDERS --------------------------------
 
 
 SlashCmdList["WOWLT"] = function(msg, theEditFrame)			-- /wlights
@@ -329,7 +354,7 @@ end
 
 
 
------------------- BUILDERS FOR THE GRAPHIC COMPONENTS --------------------
+---------------------------- BUILDERS FOR THE GRAPHIC COMPONENTS -----------------------
 
 -- create the overlay zone that appears on all the keys at once
 local function makeAlloverFrame(ff)
@@ -613,7 +638,7 @@ end
 
 
 
---------------------- ANIMATION MODIFICATION UTILITIES --------------------
+---------------------------- ANIMATION MODIFICATION UTILITIES --------------------------
 
 -- void: setAlloverColor(ff.alloverFrame, colorInt, color alpha[, texture alpha])
 local function setAlloverColor(alloverFrame, colorInt, a, vis)
@@ -809,7 +834,7 @@ end
 -- Called by edit box when ENTER is pressed in the grid size edit box
 function WoWLights:ChangeFrameSize(sizeText)
 	num = tonumber(sizeText)
-	if num ~= nil then
+	if num ~= nil and num > 1 and num < 100 then
 		updateGridSize(num)
 	end
 end
@@ -823,8 +848,9 @@ end
 
 -- Called when the Cancel button is clicked
 function WoWLights:HandleSettingsCancel()
+	ColorPickerFrame:Hide() 
 	PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT)
-	WoWLightsOptionsFrame:Hide()	
+	WoWLightsOptionsFrame:Hide()
 	for i=1, WLTexWide * WLTexHigh do
 		playerBgGrid[i] = WLUndoColorSetBuffer[i] 
 	end	
@@ -846,7 +872,7 @@ function WoWLights:HandleShowCalibrationPattern()
 end
 
 
------------------------- DEFINE TRIGGERED ANIMATIONS -----------------------
+------------------------------- DEFINE TRIGGERED ANIMATIONS ----------------------------
 
 local function moveMoney(ff, moneyGain)
         if math.abs(moneyGain) < 100 then 
@@ -858,9 +884,13 @@ local function moveMoney(ff, moneyGain)
         end
 
         if moneyGain > 0 then
+        	ff.moneyAnim.wipe:SetStartDelay(0.0)
+        	ff.moneyAnim.wipe:SetEndDelay(0.2)        	
         	ff.moneyAnim.wipeDown:Play()
-        else
-        	ff.moneyAnim.wipeDown:Play(true) -- play "up" (in reverse)
+        else -- play in reverse
+        	ff.moneyAnim.wipe:SetStartDelay(0.2)
+        	ff.moneyAnim.wipe:SetEndDelay(0.0)
+        	ff.moneyAnim.wipeDown:Play(true) 
         end
 end
 
@@ -919,6 +949,26 @@ local function updateInBetweenFlight(ff)
 	end
 end
 
+local function updateHealthPulseRate()
+	local combatAnim = WoWLightsFrame.alloverFrame.fader
+	local effectiveHealth = UnitHealth("player")
+--	if not G910WoWClassic then
+	effectiveHealth = effectiveHealth + UnitGetTotalAbsorbs("player")
+--	end
+	local healthFrac = effectiveHealth / UnitHealthMax("player")
+	if healthFrac < 0.25 then
+		combatAnim:SetDuration(0.4)
+	elseif healthFrac < 0.5 then
+		combatAnim:SetDuration(0.6)
+	elseif healthFrac < 0.75 then
+		combatAnim:SetDuration(0.8)
+	else
+		combatAnim:SetDuration(1.0)
+	end	
+	if combatAnim:IsPlaying() then
+		C_Timer.After(1.5, function() updateHealthPulseRate() end) -- call me again until animation stops
+	end
+end
 
 
 
@@ -1007,8 +1057,7 @@ end
 function WoWLights:OnEvent(ff,event, ...)
 	--print("WoW lights Event: "..event)
 	local arg1, arg2 = ...;
-    if event == "PLAYER_ENTERING_WORLD" then        -- set stuff up
-    
+    if event == "PLAYER_ENTERING_WORLD" then        -- set stuff up    
 		local colorSetKey = setSettingsPlayerInfoAndGetColorSetKey()
 		if colorSetKey ~= nil and WLProfileMemory ~= nil and WLProfileMemory[colorSetKey] ~= nil then
 			for i=1, WLTexWide * WLTexHigh do
@@ -1019,6 +1068,8 @@ function WoWLights:OnEvent(ff,event, ...)
 			end	
 			applyPlayerDefaultBackColors(WoWLightsFrame.baseTex)
 		end
+		WoWLightsOptionsFrame:EnableMouse(true) -- don't allow clicking thru the wallpaper
+		tinsert(UISpecialFrames, WoWLightsOptionsFrame:GetName()) -- close it with the ESC key
         WoWLightsFrame:Show()
         
     elseif event == "ADDON_LOADED" then
@@ -1035,6 +1086,7 @@ function WoWLights:OnEvent(ff,event, ...)
     	
     elseif event == "PLAYER_REGEN_DISABLED" then
     	ff.alloverFrame.fadeInOut:Play()
+		C_Timer.After(0.25, function() updateHealthPulseRate() end)    	
     	
     elseif event == "PLAYER_REGEN_ENABLED" then
     	ff.alloverFrame.fadeInOut:Stop()
@@ -1086,14 +1138,16 @@ function WoWLights:OnEvent(ff,event, ...)
 
     elseif event == "HEARTHSTONE_BOUND" then
 		applyCheckerboard(ff.baseTex, cyanColorInt, blackColorInt)
-		C_Timer.After(1.0, function() applyCheckerboard(ff.baseTex, blackColorInt, cyanColorInt) end)
-		C_Timer.After(2.0, function() applyPlayerDefaultBackColors(ff.baseTex) end)
+		C_Timer.After(0.5, function() applyCheckerboard(ff.baseTex, blackColorInt, cyanColorInt) end)
+		C_Timer.After(1.0, function() applyPlayerDefaultBackColors(ff.baseTex) end)
     	
 	elseif event == "ZONE_CHANGED_NEW_AREA" then
 		updateInBetweenFlight(ff)
 
 	elseif event == "PLAYER_CONTROL_LOST" then
-		setAlloverColor(ff.curtainFrame, blackColorInt, 0.5, 1.0) -- set curtain to 50% black
+		if not UnitOnTaxi("player") then
+			setAlloverColor(ff.curtainFrame, blackColorInt, 0.5, 1.0) -- set curtain to 50% black
+		end
 	elseif event == "PLAYER_CONTROL_GAINED" then
 		setAlloverColor(ff.curtainFrame, blackColorInt, 1.0, 0.0) -- set curtain to transparent
 
