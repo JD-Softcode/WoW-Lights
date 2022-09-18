@@ -51,56 +51,24 @@ InBetweenZoneNames = "The In-Between Der Zwischenraum La Zona Intermedia Entre-D
 -- WLCombatFlashAlpha
 
 local playerBgGrid = { -- default colors shown if no name/realm/spec color profile is saved for this character
-	defaultRow1,
-	defaultRow1,
-	defaultRow1,
-	defaultRow1,
-	defaultRow1,
-	defaultRow1,
-	defaultRow2,
-	defaultRow2,
-	defaultRow2,
-	defaultRow2,
-	defaultRow2,
-	defaultRow2,
-	defaultRow3,
-	defaultRow3,
-	defaultRow3,
-	defaultRow3,
-	defaultRow3,
-	defaultRow3
+	defaultRow1, defaultRow1, defaultRow1, defaultRow1, defaultRow1, defaultRow1,
+	defaultRow2, defaultRow2, defaultRow2, defaultRow2, defaultRow2, defaultRow2,
+	defaultRow3, defaultRow3, defaultRow3, defaultRow3, defaultRow3, defaultRow3
 }
 
-local calibrateBgGrid = { -- shown when the "Cal Colors" button is clicked in setting window
-	redColorInt,
-	blackColorInt,
-	greenColorInt,
-	blackColorInt,
-	blueColorInt,
-	blackColorInt,
-	blackColorInt,
-	orangeColorInt,
-	blackColorInt,
-	magentaColorInt,
-	blackColorInt,
-	cyanColorInt,
-	redColorInt,
-	blackColorInt,
-	greenColorInt,
-	blackColorInt,
-	blueColorInt,
-	blackColorInt
+local calibrateBgGrid = { -- shown when the "Cal Colors" button is clicked in settings window
+	redColorInt ,blackColorInt, greenColorInt, blackColorInt, blueColorInt, blackColorInt,
+	blackColorInt ,orangeColorInt, blackColorInt, magentaColorInt, blackColorInt, cyanColorInt,
+	redColorInt ,blackColorInt, greenColorInt, blackColorInt, blueColorInt, blackColorInt
 }
 
 
 
+----------------------------------- STARTUP THE MAIN FRAME  ---------------------------------
 
------------------------------------ STARTUP MAIN FRAME  ---------------------------------
-
-WoWLightsFrame = CreateFrame("Frame","WoW Lights",UIParent)
+WoWLightsFrame = CreateFrame("Frame","WoW Lights") -- not parented to UIParent, so immune to UI scaling
 
 WoWLightsFrame:SetFrameStrata("LOW")
--- ?? do not parent="UIParent" so my frame remains while interface is hidden, and does not scale up/down with UI
 
 WoWLightsFrame:SetScript("OnEvent", function(self, event, ...) 
 	WoWLights:OnEvent(self,event, ...) 
@@ -114,7 +82,7 @@ WoWLightsFrame:RegisterEvent("ADDON_LOADED")
 
 
 
--------------------------------- CREATE SETTINGS FRAME --------------------------------
+-------------------------------- CREATE THE SETTINGS FRAME --------------------------------
 
 WoWLightsOptionsFrame = CreateFrame("Frame","WoWLightsOpt",UIParent,"PortraitFrameTemplate")
 WoWLightsOptionsFrame:Hide()
@@ -123,6 +91,7 @@ WoWLightsOptionsFrame:SetPoint("CENTER")
 WoWLightsOptionsFrame:SetSize(500,300)
 WoWLightsOptionsFrame:SetScript("OnShow", function(self, ff) PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN) end)
 WoWLightsOptionsFrame:SetScript("OnHide", function(self, ff) PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE) end)
+WoWLightsOptTitleText:SetText("WoW Lights Settings")
 WoWLightsOptPortrait:SetTexture("Interface\\ICONS\\Achievement_DoubleRainbow")
 --WoWLightsOptPortrait:SetTexture("Interface\\ICONS\\INV_Misc_PunchCards_Prismatic")
 --WoWLightsOptPortrait:SetTexture("Interface\\ICONS\\Pet_Type_Mechanical")
@@ -131,19 +100,13 @@ WoWLightsOptPortrait:SetTexture("Interface\\ICONS\\Achievement_DoubleRainbow")
 WoWLightsOptCloseButton:SetScript("OnEnter", function(self, motion)
 	local tooltip = GetAppropriateTooltip();
 	tooltip:SetOwner(self, "ANCHOR_RIGHT");
-	tooltip:SetText("Same as OK button; all changes will be saved.");
+	tooltip:SetText("Same as OK button; changes will be saved.");
 	tooltip:Show();
 	end)
 WoWLightsOptCloseButton:SetScript("OnLeave", function(self)
 	local tooltip = GetAppropriateTooltip();
 	if tooltip:GetOwner() == self then tooltip:Hide(); end
 	end)
-
---local t = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
---t:SetText("WoW Lights Settings")
---t:SetSize(200,36)
---t:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",160,7)
-WoWLightsOptTitleText:SetText("WoW Lights Settings")
 
 local t1 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 t1:SetText("Keyboard Basic Colors")
@@ -191,6 +154,12 @@ t6:SetText("Frame Size")
 t6:SetSize(200,36)
 t6:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",300,-180)
 
+local t7 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontWhiteSmall")
+t7:SetText("Hide Colors")
+t7:SetSize(200,36)
+t7:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",130,-265)
+
+
 
 local b1 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
 b1:SetText("Color Row 1")
@@ -214,19 +183,19 @@ local b4 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate
 b4:SetText("Memorize")
 b4:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",350,-140)
 b4:SetSize(100,24)
-b4:SetScript("OnClick", function(self, btn,down) WoWLights:MemorizeColors() end)
+b4:SetScript("OnClick", function(self, btn, down) WoWLights:MemorizeColors() end)
 
 local b5 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
 b5:SetText("Reset Animation")
 b5:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",20,-270)
-b5:SetSize(150,24)
-b5:SetScript("OnClick", function(self, btn,down) PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT) end)
+b5:SetSize(145,24)
+b5:SetScript("OnClick", function(self, btn, down) WoWLights:ResetAnims() end)
 
 local b6 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate")
 b6:SetText("Cancel")
 b6:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",270,-270)
 b6:SetSize(100,24)
-b6:SetScript("OnClick", function(self, btn,down)
+b6:SetScript("OnClick", function(self, btn, down)
 	WoWLightsOptionsFrame:Hide()
 	WoWLights:HandleSettingsCancel()
 	end)
@@ -259,7 +228,7 @@ b8:SetScript("OnLeave", function(self)
 	local tooltip = GetAppropriateTooltip();
 	if tooltip:GetOwner() == self then tooltip:Hide(); end
 	end)
-
+	
 
 local s1 = CreateFrame("Slider","slider",WoWLightsOptionsFrame,"OptionsSliderTemplate")
 s1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",45,-210)
@@ -269,7 +238,7 @@ sliderHigh:SetText("bright")
 WoWLightsOptionsFrame.flasherInput = s1
 s1:SetScript("OnValueChanged", function(self, evt, arg1) 
 	WoWLights:ChangeCombatPulseIntensity(evt)
-end)
+	end)
 
 
 local e1 = CreateFrame("EditBox",nil,WoWLightsOptionsFrame,"InputBoxTemplate")
@@ -282,6 +251,21 @@ WoWLightsOptionsFrame.sizeInput = e1
 e1:SetScript("OnEnterPressed", function(self)
 	WoWLights:ChangeFrameSize(self:GetText())
 end)
+
+local c1 = CreateFrame("CheckButton","WLhideBtn",WoWLightsOptionsFrame,"ChatConfigCheckButtonTemplate")
+	c1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",177,-270)
+	c1:SetSize(24,24)
+	WLhideBtn.tooltip = "Click to hide the color box"
+	c1:SetScript("OnClick", function(self, btn,down) 
+		PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+		if (self:GetChecked()) then
+			WoWLightsFrame:Hide()
+		else
+			WoWLightsFrame:Show()
+		end
+	end)
+
+
 
 
 -------------------------------- GRID MATH UTILITIES ----------------------------------
@@ -584,24 +568,11 @@ local function makeFireworksWipe(ff)
 	local stagger = dur/3.5
 	
 	local sequence = {
-		whiteColorInt, 
-		yellowColorInt, 
-		whiteColorInt, 
-		yellowColorInt, 
-		whiteColorInt, 
-		yellowColorInt, 
+		whiteColorInt, yellowColorInt, whiteColorInt, yellowColorInt, whiteColorInt, 
 		blueColorInt,
-		whiteColorInt, 
-		yellowColorInt, 
-		whiteColorInt, 
-		yellowColorInt, 
-		whiteColorInt, 
+		whiteColorInt, yellowColorInt, whiteColorInt, yellowColorInt, whiteColorInt, 
 		redColorInt,	
-		whiteColorInt, 
-		yellowColorInt, 
-		whiteColorInt, 
-		yellowColorInt, 
-		whiteColorInt }
+		whiteColorInt, yellowColorInt, whiteColorInt, yellowColorInt, whiteColorInt }
 		
 	local wipes = {}
 	
@@ -861,7 +832,6 @@ end
 
 -- Called when the Cal Colors button is pressed
 function WoWLights:HandleShowCalibrationPattern()
-	print("HINT: Use the Cancel button to undo the pattern change and return to what you had before.")
 	for i=1, WLTexWide * WLTexHigh do
 		local colorInt = calibrateBgGrid[i]
 		playerBgGrid[i] = colorInt
@@ -869,6 +839,12 @@ function WoWLights:HandleShowCalibrationPattern()
 		WLColorButtons[i].tex:SetColorTexture(rr,gg,bb,1)
 	end	
 	applyPlayerDefaultBackColors(WoWLightsFrame.baseTex)
+end
+
+local function darkenIfNotOnTaxi(ff)
+	if not UnitOnTaxi("PLAYER") then
+		setAlloverColor(ff.curtainFrame, blackColorInt, 0.5, 1.0) -- set curtain to 50% black
+	end
 end
 
 
@@ -885,7 +861,7 @@ local function moveMoney(ff, moneyGain)
 
         if moneyGain > 0 then
         	ff.moneyAnim.wipe:SetStartDelay(0.0)
-        	ff.moneyAnim.wipe:SetEndDelay(0.2)        	
+        	ff.moneyAnim.wipe:SetEndDelay(0.2)
         	ff.moneyAnim.wipeDown:Play()
         else -- play in reverse
         	ff.moneyAnim.wipe:SetStartDelay(0.2)
@@ -895,19 +871,19 @@ local function moveMoney(ff, moneyGain)
 end
 
 local function launchFireworks(ff)
-		for i=2,37 do
+		for i=2,35 do
 			ff.fireworks[i].wipeOut:Play()
 		end
 		C_Timer.After(1.0, function() applyCheckerboard(ff.baseTex, whiteColorInt, yellowColorInt) end)
-		for t=3.0, 4.0, 0.2 do
+		for t=3.0, 3.6, 0.2 do
 			C_Timer.After(t, function() applyCheckerboard(ff.baseTex, yellowColorInt, whiteColorInt) end)
 			C_Timer.After(t+0.1, function() applyCheckerboard(ff.baseTex, whiteColorInt, yellowColorInt) end)		
 		end
-		for t=4.2, 4.4, 0.2 do
+		for t=3.8, 4.2, 0.2 do
 			C_Timer.After(t, function() applyCheckerboard(ff.baseTex, yellowColorInt, blackColorInt) end)
 			C_Timer.After(t+0.1, function() applyCheckerboard(ff.baseTex, blackColorInt, yellowColorInt) end)
 		end
-		C_Timer.After(4.6, function() applyPlayerDefaultBackColors(ff.baseTex) end)
+		C_Timer.After(4.4, function() applyPlayerDefaultBackColors(ff.baseTex) end)
 end
 
 local function deathComes(ff)
@@ -971,6 +947,39 @@ local function updateHealthPulseRate()
 end
 
 
+------------------------------- USER INTERFACE UTILITIES --------------------------------
+
+function WoWLights:ResetAnims()
+	ff = WoWLightsFrame	
+	ff.alloverFrame.fadeInOut:Stop()	
+	ff.moneyAnim.wipeDown:Stop()
+	cheatDeath(ff)
+	for i,wiper in ipairs(ff.rainbowAnim) do
+		wiper.wipeDown:Stop()
+	end
+	for i,wiper in ipairs(ff.talentAnim) do
+		wiper.wipeRight:Stop()
+	end
+	for i=2,35 do
+		ff.fireworks[i].wipeOut:Stop()
+	end	
+	setAlloverColor(ff.curtainFrame, blackColorInt, 1.0, 0.0)
+	applyPlayerDefaultBackColors(ff.baseTex)	
+end
+
+function updateColorsForNewSpec(ff)
+	local colorSetKey = setSettingsPlayerInfoAndGetColorSetKey()
+	if colorSetKey ~= nil and WLProfileMemory ~= nil and WLProfileMemory[colorSetKey] ~= nil then
+		for i=1, WLTexWide * WLTexHigh do
+			local colorInt = WLProfileMemory[colorSetKey][i]
+			playerBgGrid[i] = colorInt
+			rr,gg,bb = intToColor(colorInt)
+			WLColorButtons[i].tex:SetColorTexture(rr,gg,bb,1)
+		end	
+		applyPlayerDefaultBackColors(WoWLightsFrame.baseTex)
+	end
+end
+
 
 ---##################################
 ---##########  ON_LOAD   ############
@@ -1010,8 +1019,6 @@ local function OnLoad(ff)
 	ff.alloverFrame:SetFrameStrata("HIGH")
 	ff.moneyAnim:SetFrameStrata("MEDIUM")
 
-	ff.wasMoney = GetMoney()	
-	
 	-- create the light color programming buttons for settings window
 	for row = 0,2 do
 		for col = 0, 5 do
@@ -1022,7 +1029,7 @@ local function OnLoad(ff)
 
 	-- events I'm interested in:
 	ff:RegisterEvent("PLAYER_ENTERING_WORLD")
---	ff:RegisterEvent("PLAYER_STARTED_MOVING")
+--  ff:RegisterEvent("PLAYER_STARTED_MOVING")
 --	ff:RegisterEvent("PLAYER_STOPPED_MOVING")
 	ff:RegisterEvent("PLAYER_REGEN_DISABLED")
 	ff:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -1042,8 +1049,7 @@ local function OnLoad(ff)
 	ff:RegisterEvent("HEARTHSTONE_BOUND")
 	ff:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 	ff:RegisterEvent("PLAYER_CONTROL_GAINED")
-	ff:RegisterEvent("PLAYER_CONTROL_LOST")
-	
+	ff:RegisterEvent("PLAYER_CONTROL_LOST")	
 	-- TODO
 	--Chat window open/close?	
 end
@@ -1057,19 +1063,12 @@ end
 function WoWLights:OnEvent(ff,event, ...)
 	--print("WoW lights Event: "..event)
 	local arg1, arg2 = ...;
-    if event == "PLAYER_ENTERING_WORLD" then        -- set stuff up    
-		local colorSetKey = setSettingsPlayerInfoAndGetColorSetKey()
-		if colorSetKey ~= nil and WLProfileMemory ~= nil and WLProfileMemory[colorSetKey] ~= nil then
-			for i=1, WLTexWide * WLTexHigh do
-				local colorInt = WLProfileMemory[colorSetKey][i]
-				playerBgGrid[i] = colorInt
-				rr,gg,bb = intToColor(colorInt)
-				WLColorButtons[i].tex:SetColorTexture(rr,gg,bb,1)
-			end	
-			applyPlayerDefaultBackColors(WoWLightsFrame.baseTex)
-		end
+    if event == "PLAYER_ENTERING_WORLD" then        -- set stuff up
+    	updateColorsForNewSpec(ff)
 		WoWLightsOptionsFrame:EnableMouse(true) -- don't allow clicking thru the wallpaper
 		tinsert(UISpecialFrames, WoWLightsOptionsFrame:GetName()) -- close it with the ESC key
+		ff.wasMoney = GetMoney()
+		ff.oldSpec = GetSpecialization()
         WoWLightsFrame:Show()
         
     elseif event == "ADDON_LOADED" then
@@ -1078,9 +1077,8 @@ function WoWLights:OnEvent(ff,event, ...)
     		WLhasBeenLoaded = true
     	end
     	        
---    elseif event == "PLAYER_STARTED_MOVING" then
+--   elseif event == "PLAYER_STARTED_MOVING" then
 --		setBackgroundTexColor(ff.baseTex, 0, 1, whiteColorInt)
-
 --    elseif event == "PLAYER_STOPPED_MOVING" then
 --    	setBackgroundTexColor(ff.baseTex, 0, 1, blackColorInt)
     	
@@ -1100,10 +1098,15 @@ function WoWLights:OnEvent(ff,event, ...)
 
     elseif event == "ACTIVE_TALENT_GROUP_CHANGED" then
     	if arg2 ~= 0 then    -- arg2 == 0 only upon initial character login to the game world
-			for i,wiper in ipairs(ff.talentAnim) do
-				wiper.wipeRight:Play()
+    		local specNow = GetSpecialization()
+    		if specNow ~= ff.oldSpec then -- if the actual spec has changed and not just a talent,
+				for i,wiper in ipairs(ff.talentAnim) do
+					wiper.wipeRight:Play()
+				end
+				ff.oldSpec = specNow
 			end
 		end
+    	C_Timer.After(1.5, function() updateColorsForNewSpec(ff) end) -- updates button colors and settings text
 
     elseif event == "ACHIEVEMENT_EARNED" or event == "PLAYER_LEVEL_UP" then
     	launchFireworks(ff)
@@ -1145,14 +1148,12 @@ function WoWLights:OnEvent(ff,event, ...)
 		updateInBetweenFlight(ff)
 
 	elseif event == "PLAYER_CONTROL_LOST" then
-		if not UnitOnTaxi("player") then
-			setAlloverColor(ff.curtainFrame, blackColorInt, 0.5, 1.0) -- set curtain to 50% black
-		end
+		C_Timer.After(0.1, function() darkenIfNotOnTaxi(ff) end)
 	elseif event == "PLAYER_CONTROL_GAINED" then
 		setAlloverColor(ff.curtainFrame, blackColorInt, 1.0, 0.0) -- set curtain to transparent
 
     else
-    	print("WoWLights: Registered for but didn't handle "..event)  
+    	print("WoW Lights: Registered for but didn't handle "..event)  
     end    
 end
 
