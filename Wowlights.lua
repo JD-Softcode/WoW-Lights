@@ -604,9 +604,9 @@ local function makePulser(ff, segNum)
 	pulser:SetSize(WLGridSqSize,WLGridSqSize)
 	pulser:SetPoint("TOPLEFT", ff, "TOPLEFT", 0, 0)
 	if WLisDragons then
-		pulser.tex = wiper:CreateTexture("pulserTex"..segNum,"ARTWORK",nil,-segNum)
+		pulser.tex = pulser:CreateTexture("pulserTex"..segNum,"ARTWORK",nil,-segNum)
 	else
-		pulser.tex = wiper:CreateTexture("pulserTex"..segNum,"ARTWORK",-segNum)
+		pulser.tex = pulser:CreateTexture("pulserTex"..segNum,"ARTWORK",-segNum)
 	end
 	pulser.tex:SetAllPoints()
 	pulser:SetAlpha(0) -- texture is hidden while not animating
