@@ -19,7 +19,13 @@ WLColorButtons = {}
 WLOldRowColors = {}
 WLUndoColorSetBuffer = {}
 
-WLhasBeenLoaded = false;
+WLhasBeenLoaded = false
+
+WLisDragons = false
+WLisWoW9 = false
+WLisClassic = false
+WLisWrath = false
+WLUnspentTalentPoints = 0
 
 local whiteColorInt   = 16777215
 local blackColorInt   = 0
@@ -436,7 +442,11 @@ local function makeVerticalWipeSegment(ff, segNum, colorInt, duration, startDela
 	wiper:SetSize(WLGridSqSize*WLTexWide,WLGridSqSize)
 	wiper:SetPoint("TOPLEFT", ff, "TOPLEFT", 0, 0)
 
-	wiper.tex = wiper:CreateTexture("vwipeTex"..segNum,"ARTWORK",-segNum)
+	if WLisDragons then
+		wiper.tex = wiper:CreateTexture("vwipeTex"..segNum,"ARTWORK",nil,-segNum)
+	else
+		wiper.tex = wiper:CreateTexture("vwipeTex"..segNum,"ARTWORK",-segNum)
+	end
 	wiper.tex:SetAllPoints()
 	local tr, tg, tb = intToColor(colorInt)
 	wiper.tex:SetColorTexture(tr, tg, tb,1)
@@ -483,8 +493,11 @@ local function makeHorizontalWipeSegment(ff, segNum, colorInt, duration, startDe
 	local wiper = CreateFrame("Frame","$parentHorzWipe"..segNum,ff)
 	wiper:SetSize(WLGridSqSize, WLTexHigh*WLGridSqSize)
 	wiper:SetPoint("TOPLEFT", ff, "TOPLEFT", 0, 0)
-
-	wiper.tex = wiper:CreateTexture("hwipeTex"..segNum,"ARTWORK",-segNum)
+	if WLisDragons then
+		wiper.tex = wiper:CreateTexture("hwipeTex"..segNum,"ARTWORK",nil,-segNum)
+	else
+		wiper.tex = wiper:CreateTexture("hwipeTex"..segNum,"ARTWORK",-segNum)
+	end
 	wiper.tex:SetAllPoints()
 	local tr, tg, tb = intToColor(colorInt)
 	wiper.tex:SetColorTexture(tr, tg, tb,1)
@@ -590,8 +603,11 @@ local function makePulser(ff, segNum)
 	local pulser = CreateFrame("Frame","$parentPulser"..segNum,ff)
 	pulser:SetSize(WLGridSqSize,WLGridSqSize)
 	pulser:SetPoint("TOPLEFT", ff, "TOPLEFT", 0, 0)
-
-	pulser.tex = pulser:CreateTexture("pulserTex"..segNum,"ARTWORK",-segNum)
+	if WLisDragons then
+		pulser.tex = wiper:CreateTexture("pulserTex"..segNum,"ARTWORK",nil,-segNum)
+	else
+		pulser.tex = wiper:CreateTexture("pulserTex"..segNum,"ARTWORK",-segNum)
+	end
 	pulser.tex:SetAllPoints()
 	pulser:SetAlpha(0) -- texture is hidden while not animating
 
@@ -998,6 +1014,13 @@ local function OnLoad(ff)
 		WLProfileMemory = {}
 	end
 	
+
+	local version = select(4, GetBuildInfo())
+	WLisDragons = version > 100000
+	WLisWoW9 = version > 90000 and version < 100000
+	WLisClassic = version < 20000
+	WLisWrath = version > 20000 and version < 40000
+
 	-- place and size WoW Lights
 	ff:SetSize(WLGridSqSize * WLTexWide, WLGridSqSize * WLTexHigh)
 	ff:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 0)
