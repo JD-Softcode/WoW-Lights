@@ -21,10 +21,12 @@ WLUndoColorSetBuffer = {}
 
 WLhasBeenLoaded = false
 
-WLisDragons = false
-WLisWoW9 = false
-WLisClassic = false
-WLisWrath = false
+local version = select(4, GetBuildInfo())
+WLisDragons = version > 100000
+WLisWoW9 = version > 90000 and version < 100000
+WLisClassic = version < 20000
+WLisWrath = version > 20000 and version < 40000
+
 WLUnspentTalentPoints = 0
 
 local whiteColorInt   = 16777215
@@ -138,13 +140,15 @@ t3:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",300,-55)
 WoWLightsOptionsFrame.charString = t3
 
 local t4t = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-t4t:SetText("Specialization:")
+if not WLisClassic and not WLisWrath then
+	t4t:SetText("Specialization:")
+end
 t4t:SetSize(200,36)
 t4t:SetJustifyH("CENTER")
 t4t:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",300,-80)
 
 local t4 = WoWLightsOptionsFrame:CreateFontString(nil, "ARTWORK", "GameFontWhite")
-t4:SetText("Retribution")
+t4:SetText("Holy")
 t4:SetSize(200,36)
 t4:SetJustifyH("CENTER")
 t4:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",300,-100)
@@ -291,9 +295,12 @@ end
 local function setSettingsPlayerInfoAndGetColorSetKey()
 	local playerName = UnitName("PLAYER")
 	local playerRealm = GetRealmName()
-	local specIndex = GetSpecialization()
-	local playerSpec = select(2, GetSpecializationInfo(specIndex))
-	if playerSpec == nil then return end -- handle the extra early call before spec info is available
+	local playerSpec = ""
+	if not WLisClassic and not WLisWrath then
+		local specIndex = GetSpecialization()
+		playerSpec = select(2, GetSpecializationInfo(specIndex))
+		if playerSpec == nil then return end -- handle the extra early call before spec info is available
+	end
 	WoWLightsOptionsFrame.charString:SetText(playerName)
 	WoWLightsOptionsFrame.specString:SetText(playerSpec)
 	return playerName..playerRealm..playerSpec
@@ -1013,13 +1020,6 @@ local function OnLoad(ff)
 	if WLProfileMemory == nil then
 		WLProfileMemory = {}
 	end
-	
-
-	local version = select(4, GetBuildInfo())
-	WLisDragons = version > 100000
-	WLisWoW9 = version > 90000 and version < 100000
-	WLisClassic = version < 20000
-	WLisWrath = version > 20000 and version < 40000
 
 	-- place and size WoW Lights
 	ff:SetSize(WLGridSqSize * WLTexWide, WLGridSqSize * WLTexHigh)
@@ -1057,8 +1057,6 @@ local function OnLoad(ff)
 	ff:RegisterEvent("PLAYER_REGEN_DISABLED")
 	ff:RegisterEvent("PLAYER_REGEN_ENABLED")
 	ff:RegisterEvent("PLAYER_MONEY")
-	ff:RegisterEvent("TRANSMOGRIFY_SUCCESS")
-	ff:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
 	ff:RegisterEvent("NEW_TOY_ADDED")
 	ff:RegisterEvent("ACHIEVEMENT_EARNED")
 	ff:RegisterEvent("PLAYER_LEVEL_UP")
@@ -1067,14 +1065,19 @@ local function OnLoad(ff)
 	ff:RegisterEvent("PLAYER_UNGHOST")	
 	ff:RegisterEvent("READY_CHECK")
 	ff:RegisterEvent("DUEL_REQUESTED")
-	ff:RegisterEvent("ROLE_POLL_BEGIN")
 	ff:RegisterEvent("CHAT_MSG_RAID_WARNING")
 	ff:RegisterEvent("HEARTHSTONE_BOUND")
 	ff:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 	ff:RegisterEvent("PLAYER_CONTROL_GAINED")
-	ff:RegisterEvent("PLAYER_CONTROL_LOST")	
-	-- TODO
-	--Chat window open/close?	
+	ff:RegisterEvent("PLAYER_CONTROL_LOST")
+	
+	if not WLisClassic then
+		if not WLisWrath then
+			ff:RegisterEvent("TRANSMOGRIFY_SUCCESS")
+		end
+		ff:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
+		ff:RegisterEvent("ROLE_POLL_BEGIN")
+	end
 end
 
 
@@ -1091,7 +1094,9 @@ function WoWLights:OnEvent(ff,event, ...)
 		WoWLightsOptionsFrame:EnableMouse(true) -- don't allow clicking thru the wallpaper
 		tinsert(UISpecialFrames, WoWLightsOptionsFrame:GetName()) -- close it with the ESC key
 		ff.wasMoney = GetMoney()
-		ff.oldSpec = GetSpecialization()
+		if not WLisClassic and not WLisWrath then
+			ff.oldSpec = GetSpecialization()
+		end
         WoWLightsFrame:Show()
         
     elseif event == "ADDON_LOADED" then
