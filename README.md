@@ -1,4 +1,4 @@
 # WoW Lights
-post-LGS keyboard lights for WoW
+G Hub compatible keyboard lights for WoW
 
 Visit the website at www.jdsoftcode.net
