@@ -1,6 +1,6 @@
-## Interface: 90207
-## Title: WoW Lights 0.5
-## Version: 0.5
+## Interface: 100005
+## Title: WoW Lights 1.1
+## Version: 1.1
 ## Notes: Shows a small window of animated |cffff0000c|r|cffffff00o|r|cff00ff00l|r|cff0000ffo|r|cffff00ffr|r responding to in-game events suitable for sampling onto RGB LED keyboards.
 ## SavedVariables: WLProfileMemory, WLGridSqSize, WLCombatFlashAlpha
 ## Author: waldokind@jdsoftcode.net
