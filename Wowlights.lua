@@ -1,4 +1,4 @@
-﻿--   ## WoW Lights - ©2022-23 J∆•Softcode (www.jdsoftcode.net) ##
+﻿--   ## WoW Lights - ©2022-24 J∆•Softcode (www.jdsoftcode.net) ##
 
 ------------------------------- DEFINE USER SLASH COMMANDS ----------------------------
 
@@ -18,7 +18,8 @@ WLColorRowUnderEdit = 0
 WLColorButtons = {}
 WLOldRowColors = {}
 WLUndoColorSetBuffer = {}
-
+WLColorPickerInfo = {}
+WLColorPickerInfo.hasOpacity = false
 WLhasBeenLoaded = false
 
 local version = select(4, GetBuildInfo())
@@ -50,8 +51,8 @@ local defaultRow2 = 5973872
 local defaultRow3 = 3542625
 
 OribosZoneNames = "Oribos Орибос"   --  All western + Russian
-InBetweenZoneNames = "The In-Between Der Zwischenraum La Zona Intermedia Entre-Deux O Intermédio Промежуток" 
-                                        --  English, German, Spanish, French, Portugues, Russian            
+InBetweenZoneNames = "The In-Between Der Zwischenraum La Zona Intermedia Entre-Deux O Intermédio Промежуток"
+                                        --  English, German, Spanish, French, Portugues, Russian
 -- ADD-ON SAVED GLOBALS, loaded by WoW
 -- WLProfileMemory = {}
 -- WLGridSqSize
@@ -77,12 +78,12 @@ WoWLightsFrame = CreateFrame("Frame","WoW Lights") -- not parented to UIParent, 
 
 WoWLightsFrame:SetFrameStrata("LOW")
 
-WoWLightsFrame:SetScript("OnEvent", function(self, event, ...) 
-    WoWLights:OnEvent(self,event, ...) 
+WoWLightsFrame:SetScript("OnEvent", function(self, event, ...)
+    WoWLights:OnEvent(self,event, ...)
 end)
 
---WoWLightsFrame:SetScript("OnUpdate", function(self, elapsed) 
---  WoWLights:OnUpdate(elapsed) 
+--WoWLightsFrame:SetScript("OnUpdate", function(self, elapsed)
+--  WoWLights:OnUpdate(elapsed)
 --end)
 
 WoWLightsFrame:RegisterEvent("ADDON_LOADED")
@@ -210,13 +211,13 @@ local b7 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIPanelButtonTemplate
 b7:SetText("OK")
 b7:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",380,-270)
 b7:SetSize(100,24)
-b7:SetScript("OnClick", function(self, btn,down) 
+b7:SetScript("OnClick", function(self, btn,down)
     PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT)
     WoWLightsOptionsFrame:Hide()
-    ColorPickerFrame:Hide() 
+    ColorPickerFrame:Hide()
     -- the normal handlers change the saved globals as we go so don't need to do anything extra now
     end)
-    
+
 local b8 = CreateFrame("Button",nil,WoWLightsOptionsFrame,"UIMenuButtonStretchTemplate")
 b8:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",373,-235)
 b8:SetText("Cal Colors")
@@ -234,7 +235,7 @@ b8:SetScript("OnLeave", function(self)
     local tooltip = GetAppropriateTooltip();
     if tooltip:GetOwner() == self then tooltip:Hide(); end
     end)
-    
+
 
 local s1 = CreateFrame("Slider","slider",WoWLightsOptionsFrame,"OptionsSliderTemplate")
 s1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",45,-210)
@@ -242,10 +243,9 @@ s1:SetMinMaxValues(0.3, 1.0)
 sliderLow:SetText("faint")
 sliderHigh:SetText("bright")
 WoWLightsOptionsFrame.flasherInput = s1
-s1:SetScript("OnValueChanged", function(self, evt, arg1) 
+s1:SetScript("OnValueChanged", function(self, evt, arg1)
     WoWLights:ChangeCombatPulseIntensity(evt)
     end)
-
 
 local e1 = CreateFrame("EditBox",nil,WoWLightsOptionsFrame,"InputBoxTemplate")
 e1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",378,-210)
@@ -262,7 +262,7 @@ local c1 = CreateFrame("CheckButton","WLhideBtn",WoWLightsOptionsFrame,"ChatConf
 c1:SetPoint("TOPLEFT",WoWLightsOptionsFrame,"TOPLEFT",177,-270)
 c1:SetSize(24,24)
 WLhideBtn.tooltip = "Click to hide the color box"
-c1:SetScript("OnClick", function(self, btn,down) 
+c1:SetScript("OnClick", function(self, btn,down)
     PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     if (self:GetChecked()) then
         WoWLightsFrame:Hide()
@@ -285,7 +285,6 @@ local function randomGridPoint()
     local xMax = 0.5 + (WLTexWide-1) * WLGridSqSize
     local yMax = 0.5 + (WLTexHigh-1) * WLGridSqSize
     return fastrandom(0,xMax), fastrandom(0,yMax)
-    
 end
 
 local function setSettingsPlayerInfoAndGetColorSetKey()
@@ -295,7 +294,8 @@ local function setSettingsPlayerInfoAndGetColorSetKey()
     if not WLisClassic and not WLisWrath then
         local specIndex = GetSpecialization()
         playerSpec = select(2, GetSpecializationInfo(specIndex))
-        if playerSpec == nil then return end -- handle the extra early call before spec info is available
+        if playerSpec == nil then return -- handle the extra early call before spec info is available
+        end
     end
     WoWLightsOptionsFrame.charString:SetText(playerName)
     WoWLightsOptionsFrame.specString:SetText(playerSpec)
@@ -337,12 +337,12 @@ SlashCmdList["WOWLT"] = function(msg, theEditFrame)         -- /wlights
         WLUndoColorSetBuffer[i] = colorInt
         rr,gg,bb = intToColor(colorInt)
         WLColorButtons[i].tex:SetColorTexture(rr,gg,bb,1)
-    end 
-    
+    end
+
     WLUndoFlasherInput = WLCombatFlashAlpha
     WLUndoGridSizeInput = WLGridSqSize
 
-    WoWLightsOptionsFrame:Show() 
+    WoWLightsOptionsFrame:Show()
 end
 
 
@@ -369,7 +369,7 @@ local function makeAlloverFrame(ff)
     aof.fader:SetFromAlpha(WLCombatFlashAlpha)
     aof.fader:SetToAlpha(0.0)
     aof.fader:SetDuration(1.0)
-    
+
     return aof
 end
 
@@ -399,11 +399,11 @@ local function makeBackground(ff)
             tex:SetSize(WLGridSqSize,WLGridSqSize)
             tex:SetPoint("BOTTOMLEFT", ff, "BOTTOMLEFT", c*WLGridSqSize, (WLTexHigh-1-r)*WLGridSqSize)
             local tr, tg, tb = intToColor(bgColor)
-            tex:SetColorTexture(tr, tg, tb, 1)  
+            tex:SetColorTexture(tr, tg, tb, 1)
             baseTex[indexOf(r,c)] = tex
         end
     end
-    
+
     return baseTex
 end
 
@@ -426,7 +426,7 @@ local function makeMoneyWipe(ff)
     wiper.wipe = wiper.wipeDown:CreateAnimation("TRANSLATION")
     wiper.wipe:SetOffset(0,-(WLGridSqSize-1)*WLTexHigh)
     wiper.wipe:SetDuration(0.5)
-    
+
     wiper.wipe:SetScript("OnPlay", function(self)
         self:GetParent():GetParent():SetAlpha(1) -- reveal the texture
     end)
@@ -434,7 +434,7 @@ local function makeMoneyWipe(ff)
     wiper.wipe:SetScript("OnFinished", function(self)
         self:GetParent():GetParent():SetAlpha(0) -- hide the texture again
     end)
-    
+
     return wiper
 end
 
@@ -444,15 +444,10 @@ local function makeVerticalWipeSegment(ff, segNum, colorInt, duration, startDela
     local wiper = CreateFrame("Frame","$parentVertWipe"..segNum,ff)
     wiper:SetSize(WLGridSqSize*WLTexWide,WLGridSqSize)
     wiper:SetPoint("TOPLEFT", ff, "TOPLEFT", 0, 0)
-
-    if WLisDragons or WLisWrath then
-        wiper.tex = wiper:CreateTexture("vwipeTex"..segNum,"ARTWORK",nil,-segNum)
-    else
-        wiper.tex = wiper:CreateTexture("vwipeTex"..segNum,"ARTWORK",-segNum)
-    end
+    wiper.tex = wiper:CreateTexture("vwipeTex"..segNum,"ARTWORK",nil,-segNum)
     wiper.tex:SetAllPoints()
     local tr, tg, tb = intToColor(colorInt)
-    wiper.tex:SetColorTexture(tr, tg, tb,1)
+    wiper.tex:SetColorTexture(tr, tg, tb, 1)
     wiper:SetAlpha(0) -- texture is hidden until animated
 
     wiper.wipeDown = wiper:CreateAnimationGroup()
@@ -462,9 +457,9 @@ local function makeVerticalWipeSegment(ff, segNum, colorInt, duration, startDela
     wiper.wipe:SetOffset(0,-(WLGridSqSize-1)*WLTexHigh)
     wiper.wipe:SetDuration(duration)
     wiper.wipe:SetStartDelay(startDelay)
-    
+
     wiper.wipe:SetScript("OnUpdate", function(self)
-        if self:GetParent():GetParent():GetAlpha() == 0 and not self:IsDelaying() then 
+        if self:GetParent():GetParent():GetAlpha() == 0 and not self:IsDelaying() then
             self:GetParent():GetParent():SetAlpha(1) -- reveal the texture
         end
     end)
@@ -472,7 +467,7 @@ local function makeVerticalWipeSegment(ff, segNum, colorInt, duration, startDela
     wiper.wipe:SetScript("OnFinished", function(self)
         self:GetParent():GetParent():SetAlpha(0) -- hide the texture again
     end)
-    
+
     return wiper
 end
 
@@ -486,7 +481,7 @@ local function makeVerticalRainbowWipe(ff)
     wipe2 = makeVerticalWipeSegment(ff, 2, orangeColorInt, dur, stagger)
     wipe3 = makeVerticalWipeSegment(ff, 3, yellowColorInt, dur, stagger*2)
     wipe4 = makeVerticalWipeSegment(ff, 4, greenColorInt, dur, stagger*3)
-    wipe5 = makeVerticalWipeSegment(ff, 5, blueColorInt, dur, stagger*4)    
+    wipe5 = makeVerticalWipeSegment(ff, 5, blueColorInt, dur, stagger*4)
     return {wipe1, wipe2, wipe3, wipe4, wipe5}
 end
 
@@ -496,11 +491,7 @@ local function makeHorizontalWipeSegment(ff, segNum, colorInt, duration, startDe
     local wiper = CreateFrame("Frame","$parentHorzWipe"..segNum,ff)
     wiper:SetSize(WLGridSqSize, WLTexHigh*WLGridSqSize)
     wiper:SetPoint("TOPLEFT", ff, "TOPLEFT", 0, 0)
-    if WLisDragons or WLisWrath then
-        wiper.tex = wiper:CreateTexture("hwipeTex"..segNum,"ARTWORK",nil,-segNum)
-    else
-        wiper.tex = wiper:CreateTexture("hwipeTex"..segNum,"ARTWORK",-segNum)
-    end
+    wiper.tex = wiper:CreateTexture("hwipeTex"..segNum,"ARTWORK",nil,-segNum)
     wiper.tex:SetAllPoints()
     local tr, tg, tb = intToColor(colorInt)
     wiper.tex:SetColorTexture(tr, tg, tb,1)
@@ -513,9 +504,9 @@ local function makeHorizontalWipeSegment(ff, segNum, colorInt, duration, startDe
     wiper.wipe:SetOffset(WLGridSqSize*WLTexWide, 0)
     wiper.wipe:SetDuration(duration)
     wiper.wipe:SetStartDelay(startDelay)
-    
+
     wiper.wipe:SetScript("OnUpdate", function(self)
-        if self:GetParent():GetParent():GetAlpha() == 0 and not self:IsDelaying() then 
+        if self:GetParent():GetParent():GetAlpha() == 0 and not self:IsDelaying() then
             self:GetParent():GetParent():SetAlpha(1) -- reveal the texture
         end
     end)
@@ -523,7 +514,7 @@ local function makeHorizontalWipeSegment(ff, segNum, colorInt, duration, startDe
     wiper.wipe:SetScript("OnFinished", function(self)
         self:GetParent():GetParent():SetAlpha(0) -- hide the texture again
     end)
-    
+
     return wiper
 end
 
@@ -563,9 +554,9 @@ local function makeHorizontalMirrorSegment(ff, segNum, colorInt, duration, start
     wiper.wipe:SetOffset(WLGridSqSize*WLTexWide*moveSign/2, 0)
     wiper.wipe:SetDuration(duration)
     wiper.wipe:SetStartDelay(startDelay)
-    
+
     wiper.wipe:SetScript("OnUpdate", function(self)
-        if self:GetParent():GetParent():GetAlpha() == 0 and not self:IsDelaying() then 
+        if self:GetParent():GetParent():GetAlpha() == 0 and not self:IsDelaying() then
             self:GetParent():GetParent():SetAlpha(1) -- reveal the texture
         end
     end)
@@ -573,7 +564,7 @@ local function makeHorizontalMirrorSegment(ff, segNum, colorInt, duration, start
     wiper.wipe:SetScript("OnFinished", function(self)
         self:GetParent():GetParent():SetAlpha(0) -- hide the texture again
     end)
-    
+
     return wiper
 end
 
@@ -582,21 +573,21 @@ local function makeFireworksWipe(ff)
 
     local dur = 0.5
     local stagger = dur/3.5
-    
+
     local sequence = {
-        whiteColorInt, yellowColorInt, whiteColorInt, yellowColorInt, whiteColorInt, 
+        whiteColorInt, yellowColorInt, whiteColorInt, yellowColorInt, whiteColorInt,
         blueColorInt,
-        whiteColorInt, yellowColorInt, whiteColorInt, yellowColorInt, whiteColorInt, 
-        redColorInt,    
+        whiteColorInt, yellowColorInt, whiteColorInt, yellowColorInt, whiteColorInt,
+        redColorInt,
         whiteColorInt, yellowColorInt, whiteColorInt, yellowColorInt, whiteColorInt }
-        
+
     local wipes = {}
-    
+
     for i,color in ipairs(sequence) do
         wipes[i*2]   = makeHorizontalMirrorSegment(ff, i*2,   color, dur, stagger*i, 1)
         wipes[i*2+1] = makeHorizontalMirrorSegment(ff, i*2+1, color, dur, stagger*i, -1)
     end
-    
+
     return wipes
 end
 
@@ -606,11 +597,7 @@ local function makePulser(ff, segNum)
     local pulser = CreateFrame("Frame","$parentPulser"..segNum,ff)
     pulser:SetSize(WLGridSqSize,WLGridSqSize)
     pulser:SetPoint("TOPLEFT", ff, "TOPLEFT", 0, 0)
-    if WLisDragons or WLisWrath then
-        pulser.tex = pulser:CreateTexture("pulserTex"..segNum,"ARTWORK",nil,-segNum)
-    else
-        pulser.tex = pulser:CreateTexture("pulserTex"..segNum,"ARTWORK",-segNum)
-    end
+    pulser.tex = pulser:CreateTexture("pulserTex"..segNum,"ARTWORK",nil,-segNum)
     pulser.tex:SetAllPoints()
     pulser:SetAlpha(0) -- texture is hidden while not animating
 
@@ -682,11 +669,11 @@ local function applyCheckerboard(bg, c1, c2)
             if (idx+i)%2 == 0 then
                 bg[idx]:SetColorTexture(r1, g1, b1, 1.0)
             else
-                bg[idx]:SetColorTexture(r2, g2, b2, 1.0)            
+                bg[idx]:SetColorTexture(r2, g2, b2, 1.0)
             end
         end
     end
-end 
+end
 
 -- call with ff.pulser as first element
 local function updatePulser(pulser, x, y, colorInt, speed)
@@ -697,7 +684,7 @@ local function updatePulser(pulser, x, y, colorInt, speed)
 end
 
 -- Called by settings event handler when the combat lights intensity slider is moved
-local function setCombatFlashMaxAlpha(value)    
+local function setCombatFlashMaxAlpha(value)
     WoWLightsFrame.alloverFrame.fader:SetFromAlpha(value)
     WLCombatFlashAlpha = value
 end
@@ -706,7 +693,7 @@ end
 -- Called by settings event handler when ENTER is pressed in the grid size edit box
 local function updateGridSize(size)
     -- size is guaranteed to be a number != 0
-    if size ~= WLGridSqSize then    
+    if size ~= WLGridSqSize then
         for row=0, WLTexHigh-1 do
             for col=0, WLTexWide-1 do
                 WoWLightsFrame.baseTex[indexOf(row,col)]:SetColorTexture(0,0,0,0) -- make existing texture translarent
@@ -720,23 +707,23 @@ end
 
 --------------------------------- COLOR CHANGE HANDLERS ---------------------------------
 
--- Called whenever the color wheel value is changed while one color square is being updated
+-- Called by ColorPickerFrame when color wheel value is changed while one color square is being updated
 local function colorSquareChanged()
     if WLColorBtnUnderEdit ~= nil then
         rr, gg, bb = ColorPickerFrame:GetColorRGB() -- get the new color
         colorInt = color1ToInt(rr, gg, bb) -- convert to in Int
-        playerBgGrid[WLColorBtnUnderEdit.colorIndex] = colorInt -- change the prefs 
+        playerBgGrid[WLColorBtnUnderEdit.colorIndex] = colorInt -- change the prefs
         WoWLightsFrame.baseTex[WLColorBtnUnderEdit.colorIndex-1]:SetColorTexture(rr, gg, bb, 1.0) -- change the corner texture
         WLColorBtnUnderEdit.tex:SetColorTexture(rr,gg,bb,1) -- change the settings button
     end
 end
 
--- Called when the color wheel Cancel button is clicked while one color square is being updated
+-- Called by ColorPickerFrame when its Cancel button is clicked while one color square is being updated
 local function colorSquareReset()
     if WLColorBtnUnderEdit ~= nil then
         colorInt = WLColorBtnUnderEdit.oldColorInt
         rr, gg, bb = intToColor(colorInt) -- get the old color
-        playerBgGrid[WLColorBtnUnderEdit.colorIndex] = colorInt -- change the prefs 
+        playerBgGrid[WLColorBtnUnderEdit.colorIndex] = colorInt -- change the prefs
         WoWLightsFrame.baseTex[WLColorBtnUnderEdit.colorIndex-1]:SetColorTexture(rr, gg, bb, 1.0) -- change the corner texture
         WLColorBtnUnderEdit.tex:SetColorTexture(rr,gg,bb,1) -- change the settings button
     end
@@ -753,44 +740,61 @@ local function makeColorButton(index, colorInt, parent, x, y)
     b:SetNormalTexture(b.tex)
     b.colorIndex = index
     b.oldColorInt = 0
-    b:SetScript("OnClick", function(self, btn,down) -- btn is mouseBtnID; down is boolean
-        PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_IN) 
-        WLColorBtnUnderEdit = self
-        WLColorRowUnderEdit = 0
-        self.oldColorInt = playerBgGrid[self.colorIndex]
-        local rr,gg,bb = intToColor(self.oldColorInt)
-        ColorPickerFrame:SetColorRGB(rr,gg,bb)
-        ColorPickerFrame.func = colorSquareChanged
-        ColorPickerFrame.cancelFunc = colorSquareReset
-        ColorPickerFrame:Hide() 
-        ColorPickerFrame:Show() 
+
+    if WLisDragons then
+       b:SetScript("OnClick", function(self, btn, down) -- btn is mouseBtnID; down is boolean
+           PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_IN)
+           WLColorBtnUnderEdit = self
+           WLColorRowUnderEdit = 0
+           self.oldColorInt = playerBgGrid[self.colorIndex]
+           local rr,gg,bb = intToColor(self.oldColorInt)
+           WLColorPickerInfo.r, WLColorPickerInfo.g, WLColorPickerInfo.b = rr,gg,bb
+           WLColorPickerInfo.swatchFunc = colorSquareChanged
+           WLColorPickerInfo.cancelFunc = colorSquareReset
+           ColorPickerFrame:SetupColorPickerAndShow(WLColorPickerInfo)
+       end)
+   else
+        b:SetScript("OnClick", function(self, btn, down) -- btn is mouseBtnID; down is boolean
+            PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_IN)
+            WLColorBtnUnderEdit = self
+            WLColorRowUnderEdit = 0
+            self.oldColorInt = playerBgGrid[self.colorIndex]
+            local rr,gg,bb = intToColor(self.oldColorInt)
+            ColorPickerFrame:SetColorRGB(rr,gg,bb)
+            ColorPickerFrame.func = colorSquareChanged -- used by Wrath
+            ColorPickerFrame.swatchFunc = colorSquareChanged -- used by Classic
+            ColorPickerFrame.cancelFunc = colorSquareReset
+            ColorPickerFrame:Hide()
+            ColorPickerFrame:Show()
         end)
+   end
+
     return b
 end
 
 
--- Called whenever the color wheel value is changed while a row is being updated
+-- Called by ColorPickerFrame when color wheel value is changed while a row is being updated
 local function colorRowChanged()
     if WLColorRowUnderEdit > 0 then
         rr, gg, bb = ColorPickerFrame:GetColorRGB() -- get the new color
         colorInt = color1ToInt(rr, gg, bb) -- convert to in Int
         idxSt = 1 + WLTexWide * (WLColorRowUnderEdit-1)
         for ii = idxSt, (idxSt + WLTexWide - 1) do
-            playerBgGrid[ii] = colorInt -- change the prefs 
+            playerBgGrid[ii] = colorInt -- change the prefs
             WoWLightsFrame.baseTex[ii-1]:SetColorTexture(rr, gg, bb, 1.0) -- change the corner texture
             WLColorButtons[ii].tex:SetColorTexture(rr,gg,bb,1)  -- change the settings button
         end
     end
 end
 
--- Called when the color wheel Cancel button is clicked while a row is being updated
+-- Called by ColorPickerFrame when its Cancel button is clicked while a row is being updated
 local function colorRowReset()
     if WLColorRowUnderEdit > 0 then
         srcIndex = 1 + WLTexWide * (WLColorRowUnderEdit-1)  -- 1, 7, or 13
         for ii = srcIndex, (srcIndex + WLTexWide - 1) do
             colorInt = WLOldRowColors[ii-srcIndex]
             rr, gg, bb = intToColor(colorInt) -- get the old color
-            playerBgGrid[ii] = colorInt -- change the prefs 
+            playerBgGrid[ii] = colorInt -- change the prefs
             WoWLightsFrame.baseTex[ii-1]:SetColorTexture(rr, gg, bb, 1.0) -- change the corner texture
             WLColorButtons[ii].tex:SetColorTexture(rr,gg,bb,1)  -- change the settings button
         end
@@ -804,16 +808,29 @@ function WoWLights:RecolorColorRow(self,rowNum)
     WLColorRowUnderEdit = rowNum  -- 1, 2, 3
     WLColorBtnUnderEdit = nil
     for i = srcIndex, srcIndex + WLTexWide - 1 do
-        WLOldRowColors[i-srcIndex] = playerBgGrid[i]    
+        WLOldRowColors[i-srcIndex] = playerBgGrid[i]
     end
     nowColorInt = playerBgGrid[srcIndex]
     local rr,gg,bb = intToColor(nowColorInt)
-    ColorPickerFrame:SetColorRGB(rr,gg,bb)
-    ColorPickerFrame.func = colorRowChanged
-    ColorPickerFrame.cancelFunc = colorRowReset
-    ColorPickerFrame:Hide() 
-    ColorPickerFrame:Show() 
+
+    if WLisDragons then
+        WLColorPickerInfo.r, WLColorPickerInfo.g, WLColorPickerInfo.b = rr,gg,bb
+        WLColorPickerInfo.swatchFunc = colorRowChanged
+        WLColorPickerInfo.cancelFunc = colorRowReset
+        ColorPickerFrame:SetupColorPickerAndShow(WLColorPickerInfo)
+    else
+        ColorPickerFrame:SetColorRGB(rr,gg,bb)
+        ColorPickerFrame.func = colorRowChanged -- used by Wrath
+        ColorPickerFrame.swatchFunc = colorRowChanged -- used by Classic
+        ColorPickerFrame.cancelFunc = colorRowReset
+        ColorPickerFrame:Hide()
+        ColorPickerFrame:Show()
+    end
 end
+
+
+
+--------------------------------- OTHER INTERFACE HANDLERS ---------------------------------
 
 -- Called by slider control when the combat lights intensity slider is moved
 function WoWLights:ChangeCombatPulseIntensity(value)
@@ -838,12 +855,12 @@ end
 
 -- Called when the Cancel button is clicked
 function WoWLights:HandleSettingsCancel()
-    ColorPickerFrame:Hide() 
+    ColorPickerFrame:Hide()
     PlaySound(SOUNDKIT.IG_MINIMAP_ZOOM_OUT)
     WoWLightsOptionsFrame:Hide()
     for i=1, WLTexWide * WLTexHigh do
-        playerBgGrid[i] = WLUndoColorSetBuffer[i] 
-    end 
+        playerBgGrid[i] = WLUndoColorSetBuffer[i]
+    end
     applyPlayerDefaultBackColors(WoWLightsFrame.baseTex)
     setCombatFlashMaxAlpha(WLUndoFlasherInput)
     updateGridSize(WLUndoGridSizeInput)
@@ -856,7 +873,7 @@ function WoWLights:HandleShowCalibrationPattern()
         playerBgGrid[i] = colorInt
         rr,gg,bb = intToColor(colorInt)
         WLColorButtons[i].tex:SetColorTexture(rr,gg,bb,1)
-    end 
+    end
     applyPlayerDefaultBackColors(WoWLightsFrame.baseTex)
 end
 
@@ -870,11 +887,11 @@ end
 ------------------------------- DEFINE TRIGGERED ANIMATIONS ----------------------------
 
 local function moveMoney(ff, moneyGain)
-        if math.abs(moneyGain) < 100 then 
+        if math.abs(moneyGain) < 100 then
             setMoneyWipeColor(ff.moneyAnim, copperColorInt)
-        elseif math.abs(moneyGain) < 10000 then 
+        elseif math.abs(moneyGain) < 10000 then
             setMoneyWipeColor(ff.moneyAnim, silverColorInt)
-        else 
+        else
             setMoneyWipeColor(ff.moneyAnim, goldColorInt)
         end
 
@@ -885,7 +902,7 @@ local function moveMoney(ff, moneyGain)
         else -- play in reverse
             ff.moneyAnim.wipe:SetStartDelay(0.2)
             ff.moneyAnim.wipe:SetEndDelay(0.0)
-            ff.moneyAnim.wipeDown:Play(true) 
+            ff.moneyAnim.wipeDown:Play(true)
         end
 end
 
@@ -896,7 +913,7 @@ local function launchFireworks(ff)
         C_Timer.After(1.0, function() applyCheckerboard(ff.baseTex, whiteColorInt, yellowColorInt) end)
         for t=3.0, 3.6, 0.2 do
             C_Timer.After(t, function() applyCheckerboard(ff.baseTex, yellowColorInt, whiteColorInt) end)
-            C_Timer.After(t+0.1, function() applyCheckerboard(ff.baseTex, whiteColorInt, yellowColorInt) end)       
+            C_Timer.After(t+0.1, function() applyCheckerboard(ff.baseTex, whiteColorInt, yellowColorInt) end)
         end
         for t=3.8, 4.2, 0.2 do
             C_Timer.After(t, function() applyCheckerboard(ff.baseTex, yellowColorInt, blackColorInt) end)
@@ -932,24 +949,26 @@ local function cheatDeath(ff)
 end
 
 local function updateInBetweenFlight(ff)
-    local zone = GetZoneText()
-    zone = string.gsub(zone,"%-","%%%-")  -- string.find() uses patterns so must escape '-'
-    if string.find(OribosZoneNames, zone) ~= nil or string.find(InBetweenZoneNames, zone) ~= nil then
-        if UnitOnTaxi("player") then
-            ff.fireworks[2].wipeOut:Play()
-            ff.fireworks[3].wipeOut:Play()
+    if not WLisClassic and not WLisWrath then
+        local zone = GetZoneText()
+        zone = string.gsub(zone,"%-","%%%-")  -- string.find() uses patterns so must escape '-'
+        if string.find(OribosZoneNames, zone) ~= nil or string.find(InBetweenZoneNames, zone) ~= nil then
+            if UnitOnTaxi("player") then
+                ff.fireworks[2].wipeOut:Play()
+                ff.fireworks[3].wipeOut:Play()
+            end
+            -- keep calling myself every 1.5sec while in the special zones, and play animation if on taxi
+            C_Timer.After(1.5, function() updateInBetweenFlight(ff) end)
         end
-        -- keep calling myself every 1.5sec while in the special zones, and play animation if on taxi
-        C_Timer.After(1.5, function() updateInBetweenFlight(ff) end)
     end
 end
 
 local function updateHealthPulseRate()
     local combatAnim = WoWLightsFrame.alloverFrame.fader
     local effectiveHealth = UnitHealth("player")
---  if not G910WoWClassic then
-    effectiveHealth = effectiveHealth + UnitGetTotalAbsorbs("player")
---  end
+    if WLisDragons then
+        effectiveHealth = effectiveHealth + UnitGetTotalAbsorbs("player")
+    end
     local healthFrac = effectiveHealth / UnitHealthMax("player")
     if healthFrac < 0.25 then
         combatAnim:SetDuration(0.4)
@@ -959,7 +978,7 @@ local function updateHealthPulseRate()
         combatAnim:SetDuration(0.8)
     else
         combatAnim:SetDuration(1.0)
-    end 
+    end
     if combatAnim:IsPlaying() then
         C_Timer.After(1.5, function() updateHealthPulseRate() end) -- call me again until animation stops
     end
@@ -969,8 +988,8 @@ end
 ------------------------------- USER INTERFACE UTILITIES --------------------------------
 
 function WoWLights:ResetAnims()
-    ff = WoWLightsFrame 
-    ff.alloverFrame.fadeInOut:Stop()    
+    ff = WoWLightsFrame
+    ff.alloverFrame.fadeInOut:Stop()
     ff.moneyAnim.wipeDown:Stop()
     cheatDeath(ff)
     for i,wiper in ipairs(ff.rainbowAnim) do
@@ -981,9 +1000,9 @@ function WoWLights:ResetAnims()
     end
     for i=2,35 do
         ff.fireworks[i].wipeOut:Stop()
-    end 
+    end
     setAlloverColor(ff.curtainFrame, blackColorInt, 1.0, 0.0)
-    applyPlayerDefaultBackColors(ff.baseTex)    
+    applyPlayerDefaultBackColors(ff.baseTex)
 end
 
 function updateColorsForNewSpec(ff)
@@ -994,7 +1013,7 @@ function updateColorsForNewSpec(ff)
             playerBgGrid[i] = colorInt
             rr,gg,bb = intToColor(colorInt)
             WLColorButtons[i].tex:SetColorTexture(rr,gg,bb,1)
-        end 
+        end
         applyPlayerDefaultBackColors(WoWLightsFrame.baseTex)
     end
 end
@@ -1004,7 +1023,7 @@ end
 ---##########  ON_LOAD   ############
 ---##################################
 local function OnLoad(ff)
-    
+
     -- Initialize global saved vars if this is the first time we're ever starting
     if WLGridSqSize == nil or WLGridSqSize <= 0 then
         WLGridSqSize = 3.35
@@ -1012,7 +1031,7 @@ local function OnLoad(ff)
     if WLCombatFlashAlpha == nil or WLCombatFlashAlpha <= 0 then
         WLCombatFlashAlpha = 0.8
     end
-    
+
     if WLProfileMemory == nil then
         WLProfileMemory = {}
     end
@@ -1028,12 +1047,12 @@ local function OnLoad(ff)
     ff.rainbowAnim = makeVerticalRainbowWipe(ff)
     ff.talentAnim = makeHorizontalBlueWhiteWipe(ff)
     ff.fireworks = makeFireworksWipe(ff)
-    
+
     ff.pulsers = {}
     for i=1,8 do
         ff.pulsers[i] = makePulser(ff, i)
-    end 
-    
+    end
+
     ff.curtainFrame:SetFrameStrata("DIALOG") --highest
     ff.alloverFrame:SetFrameStrata("HIGH")
     ff.moneyAnim:SetFrameStrata("MEDIUM")
@@ -1058,7 +1077,7 @@ local function OnLoad(ff)
     ff:RegisterEvent("PLAYER_LEVEL_UP")
     ff:RegisterEvent("PLAYER_DEAD")
     ff:RegisterEvent("PLAYER_ALIVE")
-    ff:RegisterEvent("PLAYER_UNGHOST")  
+    ff:RegisterEvent("PLAYER_UNGHOST")
     ff:RegisterEvent("READY_CHECK")
     ff:RegisterEvent("DUEL_REQUESTED")
     ff:RegisterEvent("CHAT_MSG_RAID_WARNING")
@@ -1066,7 +1085,7 @@ local function OnLoad(ff)
     ff:RegisterEvent("ZONE_CHANGED_NEW_AREA")
     ff:RegisterEvent("PLAYER_CONTROL_GAINED")
     ff:RegisterEvent("PLAYER_CONTROL_LOST")
-    
+
     if not WLisClassic then
         if not WLisWrath then
             ff:RegisterEvent("TRANSMOGRIFY_SUCCESS")
@@ -1094,25 +1113,25 @@ function WoWLights:OnEvent(ff,event, ...)
             ff.oldSpec = GetSpecialization()
         end
         WoWLightsFrame:Show()
-        
+
     elseif event == "ADDON_LOADED" then
-        if not WLhasBeenLoaded then 
+        if not WLhasBeenLoaded then
             OnLoad(ff)
             WLhasBeenLoaded = true
         end
-                
+
 --   elseif event == "PLAYER_STARTED_MOVING" then
 --      setBackgroundTexColor(ff.baseTex, 0, 1, whiteColorInt)
 --    elseif event == "PLAYER_STOPPED_MOVING" then
 --      setBackgroundTexColor(ff.baseTex, 0, 1, blackColorInt)
-        
+
     elseif event == "PLAYER_REGEN_DISABLED" then
         ff.alloverFrame.fadeInOut:Play()
-        C_Timer.After(0.25, function() updateHealthPulseRate() end)     
-        
+        C_Timer.After(0.25, function() updateHealthPulseRate() end)
+
     elseif event == "PLAYER_REGEN_ENABLED" then
         ff.alloverFrame.fadeInOut:Stop()
-        
+
     elseif event == "TRANSMOGRIFY_SUCCESS" or event == "NEW_TOY_ADDED" then
         ff:UnregisterEvent("TRANSMOGRIFY_SUCCESS") -- only take first call, not every piece of gear!
         for i,wiper in ipairs(ff.rainbowAnim) do
@@ -1134,22 +1153,22 @@ function WoWLights:OnEvent(ff,event, ...)
 
     elseif event == "ACHIEVEMENT_EARNED" or event == "PLAYER_LEVEL_UP" then
         launchFireworks(ff)
-        
+
     elseif event == "PLAYER_MONEY" then
         local moneyGain = GetMoney() - ff.wasMoney
         moveMoney(ff,moneyGain )
         ff.wasMoney = GetMoney()
-        
+
     elseif event == "PLAYER_DEAD" then
         deathComes(ff)
     elseif event == "PLAYER_ALIVE" then
            -- UnitIsDeadOrGhost == true means must have released to graveyard but actually still dead
         if not UnitIsDeadOrGhost("player") then
             cheatDeath(ff)
-        end                                         
-    elseif event == "PLAYER_UNGHOST" then  -- after corps run or spirit healer
+        end
+    elseif event == "PLAYER_UNGHOST" then  -- after corpse run or spirit healer
             cheatDeath(ff)
-            
+
     elseif event == "READY_CHECK" then
         setBgToColorWithWhiteBox(ff.baseTex, greenColorInt)
         C_Timer.After(1.5, function() applyPlayerDefaultBackColors(ff.baseTex) end)
@@ -1167,7 +1186,7 @@ function WoWLights:OnEvent(ff,event, ...)
         applyCheckerboard(ff.baseTex, cyanColorInt, blackColorInt)
         C_Timer.After(0.5, function() applyCheckerboard(ff.baseTex, blackColorInt, cyanColorInt) end)
         C_Timer.After(1.0, function() applyPlayerDefaultBackColors(ff.baseTex) end)
-        
+
     elseif event == "ZONE_CHANGED_NEW_AREA" then
         updateInBetweenFlight(ff)
 
@@ -1177,8 +1196,8 @@ function WoWLights:OnEvent(ff,event, ...)
         setAlloverColor(ff.curtainFrame, blackColorInt, 1.0, 0.0) -- set curtain to transparent
 
     else
-        print("WoW Lights: Registered for but didn't handle "..event)  
-    end    
+        print("WoW Lights: Registered for but didn't handle "..event)
+    end
 end
 
 

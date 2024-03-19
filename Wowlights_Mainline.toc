@@ -1,9 +1,9 @@
-## Interface: 100005
-## Title: WoW Lights 1.1
-## Version: 1.1
+## Interface: 100205
+## Title: WoW Lights 1.2
+## Version: 1.2
 ## Notes: Shows a small window of animated |cffff0000c|r|cffffff00o|r|cff00ff00l|r|cff0000ffo|r|cffff00ffr|r responding to in-game events suitable for sampling onto RGB LED keyboards.
 ## SavedVariables: WLProfileMemory, WLGridSqSize, WLCombatFlashAlpha
+## IconTexture: Interface\AddOns\Wowlights\wowlights_bg.tga
 ## Author: waldokind@jdsoftcode.net
 ## X-Website: http://www.jdsoftcode.net
 Wowlights.lua
-
