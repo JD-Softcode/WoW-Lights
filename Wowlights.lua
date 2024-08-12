@@ -53,6 +53,8 @@ local defaultRow3 = 3542625
 OribosZoneNames = "Oribos Орибос"   --  All western + Russian
 InBetweenZoneNames = "The In-Between Der Zwischenraum La Zona Intermedia Entre-Deux O Intermédio Промежуток"
                                         --  English, German, Spanish, French, Portugues, Russian
+local doingVigorAnimation = false
+
 -- ADD-ON SAVED GLOBALS, loaded by WoW
 -- WLProfileMemory = {}
 -- WLGridSqSize
@@ -963,6 +965,27 @@ local function updateInBetweenFlight(ff)
     end
 end
 
+local function updateVigorFlight(ff)
+	local stillFound = false
+    if not WLisClassic and not WLisWrath then
+        for i = 1, 99 do
+    		local aura = C_UnitAuras.GetBuffDataByIndex("player", i)
+    		if aura == nil then break end  -- got to the end of the buffs list
+    		if aura.spellId == 377234 then -- "Thrill of the Skies" (Vigor regen) is active
+                ff.fireworks[2].wipeOut:Play()
+                ff.fireworks[3].wipeOut:Play()
+                stillFound = true
+                break
+    		end
+        end
+        doingVigorAnimation = stillFound
+        -- keep calling me every 1.5sec while regenerating vigor
+        if doingVigorAnimation then
+        	C_Timer.After(1.5, function() updateVigorFlight(ff) end)
+        end
+    end
+end
+
 local function updateHealthPulseRate()
     local combatAnim = WoWLightsFrame.alloverFrame.fader
     local effectiveHealth = UnitHealth("player")
@@ -1085,6 +1108,7 @@ local function OnLoad(ff)
     ff:RegisterEvent("ZONE_CHANGED_NEW_AREA")
     ff:RegisterEvent("PLAYER_CONTROL_GAINED")
     ff:RegisterEvent("PLAYER_CONTROL_LOST")
+    ff:RegisterEvent("UNIT_AURA")
 
     if not WLisClassic then
         if not WLisWrath then
@@ -1195,6 +1219,17 @@ function WoWLights:OnEvent(ff,event, ...)
     elseif event == "PLAYER_CONTROL_GAINED" then
         setAlloverColor(ff.curtainFrame, blackColorInt, 1.0, 0.0) -- set curtain to transparent
 
+    elseif event == "UNIT_AURA" then
+    	if ( not doingVigorAnimation and arg1 == "player" ) then
+			for i = 1, 99 do
+				local aura = C_UnitAuras.GetBuffDataByIndex("player", i)
+				if aura == nil then break end
+				if aura.spellId == 377234 then -- "Thrill of the Skies" (Vigor regen) then
+					updateVigorFlight(ff)
+					break
+				end
+			end
+		end
     else
         print("WoW Lights: Registered for but didn't handle "..event)
     end
